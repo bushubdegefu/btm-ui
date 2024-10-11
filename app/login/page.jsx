@@ -21,7 +21,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
+    <div className="min-h-screen w-full bg-gray-100 flex flex-col justify-center items-center p-4">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-emerald-700">BTM</h1>
       </div>
