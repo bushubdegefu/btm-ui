@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart2,
   Search,
@@ -14,6 +14,7 @@ import {
   Bug,
   Bell,
   LucideSidebar,
+  LogOut,
 } from "lucide-react";
 import {
   Select,
@@ -22,12 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const projects = [
-  { id: "1", name: "Project Alpha" },
-  { id: "2", name: "Project Beta" },
-  { id: "3", name: "Project Gamma" },
-];
+import { useLogInStore } from "./store/loginstore";
+import jsCookie from "js-cookie";
+import { revalidatePath } from "next/cache";
+import { usePathname, useRouter } from "next/navigation";
 
 const NavItem = ({ icon, label, active, href, handleClick, value }) => {
   return (
@@ -47,14 +46,52 @@ const NavItem = ({ icon, label, active, href, handleClick, value }) => {
 };
 
 export default function SideBarLayout() {
+  const router = useRouter();
+  const getUserProjects = useLogInStore((state) => state.getUserProjects);
+  const user_projects = useLogInStore((state) => state.user_projects);
+  const currentProject = useLogInStore((state) => state.current_project);
+  const setCurrentProject = useLogInStore((state) => state.setCurrentProject);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    getUserProjects();
+  }, []);
+
+  const handleProjectSelect = (value) => {
+    setCurrentProject(value);
+
+    // let cur_project = user_projects.filter((dapp) => dapp.id == value)[0];
+  };
+  useEffect(() => {
+    if (currentProject != null) {
+      jsCookie.set("current_project", JSON.stringify(currentProject), {
+        expires: 7,
+        path: "/",
+      });
+      router.refresh();
+    }
+  }, [currentProject]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeView, setActiveView] = useState("dashboard");
+  const logout = useLogInStore((state) => state.resetTokenLogout);
+  const loggein = useLogInStore((state) => state.blue_admin_token);
+
   function veiewTab(tab_name) {
     setActiveView(tab_name);
   }
+
+  function handleLogout() {
+    logout();
+    jsCookie.remove("access_token");
+    jsCookie.remove("refresh_token");
+    jsCookie.remove("user");
+    jsCookie.remove("current_project");
+    jsCookie.remove("page_size");
+    jsCookie.remove("current_page");
+  }
   return (
     <aside
-      className={`${sidebarOpen ? "w-64" : "w-14"} bg-emerald-700 text-white transition-all duration-300 ease-in-out`}
+      className={`w-full h-full bg-emerald-700 text-white transition-all duration-300 ease-in-out`}
     >
       <div className="p-4">
         <div className="w-full flex flex-row">
@@ -66,23 +103,23 @@ export default function SideBarLayout() {
               BTM
             </h1>
           </div>
-          <div className="flex w-1/4 items-center">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className={`${!sidebarOpen ? "mx-1" : ""} p-2 bg-emerald-600 rounded`}
-            >
-              {sidebarOpen ? "<<" : ">>"}
-            </button>{" "}
-          </div>
         </div>
         <div className={`mt-4 ${!sidebarOpen && "hidden"}`}>
-          <Select>
+          <Select
+            name="current_project"
+            value={currentProject ? currentProject.id : ""}
+            onValueChange={handleProjectSelect}
+            // defaultValue={currentProject?.id}
+          >
             <SelectTrigger className="w-full bg-emerald-600 border-emerald-500">
-              <SelectValue placeholder="Select project" />
+              <SelectValue
+                value={currentProject ? currentProject.id : ""}
+                placeholder="Select project"
+              />
             </SelectTrigger>
             <SelectContent>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
+              {user_projects?.map((project) => (
+                <SelectItem key={"projnav" + project?.id} value={project?.id}>
                   {project.name}
                 </SelectItem>
               ))}
@@ -156,6 +193,16 @@ export default function SideBarLayout() {
           value="users"
           href="/users"
         />
+
+        {loggein ? (
+          <NavItem
+            icon={<LogOut className={`${false ? "mr-2" : "mr-4"} h-4 w-4`} />}
+            label="Logout"
+            handleClick={handleLogout}
+            value="login"
+            href="/login"
+          />
+        ) : null}
       </nav>
     </aside>
   );

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { useLogInStore } from "./loginstore";
 
 // https://goblue-back.onrender.com/api/v1
 export const btmClient = axios.create({
@@ -20,6 +21,7 @@ export const useRoleSchemaStore = create((set, get) => ({
   page: 1,
   size: 15,
   getroles: async () => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query { roles(page: Int!, size: Int!) {
              id
@@ -61,6 +63,7 @@ export const useRoleSchemaStore = create((set, get) => ({
       });
   },
   getrole: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {  role(id: Int!) {
            id
@@ -100,6 +103,7 @@ export const useRoleSchemaStore = create((set, get) => ({
       });
   },
   createrole: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createrole(input: CreateRoleInput) {
@@ -145,6 +149,7 @@ export const useRoleSchemaStore = create((set, get) => ({
       });
   },
   updaterole: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           updaterole(input: UpdateRoleInput) {
@@ -188,6 +193,7 @@ export const useRoleSchemaStore = create((set, get) => ({
       });
   },
   deleterole: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           deleterole(id: Int!)
@@ -219,6 +225,7 @@ export const useRoleSchemaStore = create((set, get) => ({
   // relation OTM/MTM
 
   getroleusers: async (roleId, userId, page, size) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {
             roleusers( role_id: Int!,  user_id: Int!, page: Int!, size: Int!) {
@@ -264,6 +271,7 @@ export const useRoleSchemaStore = create((set, get) => ({
       });
   },
   createroleusers: async (roleId, userId) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createroleuser(role_id: Int!, user_id: Int! ) {
@@ -294,6 +302,7 @@ export const useRoleSchemaStore = create((set, get) => ({
       });
   },
   deleteroleusers: async (roleId, userId) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        deleteroleuser(role_id: Int!, user_id: Int! ) {
@@ -325,6 +334,7 @@ export const useRoleSchemaStore = create((set, get) => ({
   },
 
   getrolefeatures: async (roleId, featureId, page, size) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {
             rolefeatures( role_id: Int!,  feature_id: Int!, page: Int!, size: Int!) {
@@ -370,6 +380,7 @@ export const useRoleSchemaStore = create((set, get) => ({
       });
   },
   createrolefeatures: async (roleId, featureId) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createrolefeature(role_id: Int!, feature_id: Int! ) {
@@ -400,6 +411,7 @@ export const useRoleSchemaStore = create((set, get) => ({
       });
   },
   deleterolefeatures: async (roleId, featureId) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        deleterolefeature(role_id: Int!, feature_id: Int! ) {
@@ -440,6 +452,7 @@ export const useAppSchemaStore = create((set, get) => ({
   page: 1,
   size: 15,
   getapps: async () => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query { apps(page: Int!, size: Int!) {
              id
@@ -479,6 +492,7 @@ export const useAppSchemaStore = create((set, get) => ({
       });
   },
   getapp: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {  app(id: Int!) {
            id
@@ -516,6 +530,7 @@ export const useAppSchemaStore = create((set, get) => ({
       });
   },
   createapp: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createapp(input: CreateAppInput) {
@@ -559,6 +574,7 @@ export const useAppSchemaStore = create((set, get) => ({
       });
   },
   updateapp: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           updateapp(input: UpdateAppInput) {
@@ -600,6 +616,7 @@ export const useAppSchemaStore = create((set, get) => ({
       });
   },
   deleteapp: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           deleteapp(id: Int!)
@@ -631,6 +648,7 @@ export const useAppSchemaStore = create((set, get) => ({
   // relation OTM/MTM
 
   getapproles: async (appId, roleId, page, size) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {
             approles( app_id: Int!,  role_id: Int!, page: Int!, size: Int!) {
@@ -674,6 +692,7 @@ export const useAppSchemaStore = create((set, get) => ({
       });
   },
   createapproles: async (appId, roleId) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createapprole(app_id: Int!, role_id: Int! ) {
@@ -704,6 +723,7 @@ export const useAppSchemaStore = create((set, get) => ({
       });
   },
   deleteapproles: async (appId, roleId) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        deleteapprole(app_id: Int!, role_id: Int! ) {
@@ -744,6 +764,7 @@ export const useUserSchemaStore = create((set, get) => ({
   page: 1,
   size: 15,
   getusers: async () => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query { users(page: Int!, size: Int!) {
              id
@@ -784,6 +805,7 @@ export const useUserSchemaStore = create((set, get) => ({
       });
   },
   getuser: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {  user(id: Int!) {
            id
@@ -822,6 +844,7 @@ export const useUserSchemaStore = create((set, get) => ({
       });
   },
   createuser: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createuser(input: CreateUserInput) {
@@ -867,6 +890,7 @@ export const useUserSchemaStore = create((set, get) => ({
       });
   },
   updateuser: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           updateuser(input: UpdateUserInput) {
@@ -909,6 +933,7 @@ export const useUserSchemaStore = create((set, get) => ({
       });
   },
   deleteuser: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           deleteuser(id: Int!)
@@ -940,6 +965,7 @@ export const useUserSchemaStore = create((set, get) => ({
   // relation OTM/MTM
 
   getuserroles: async (userId, roleId, page, size) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {
             userroles( user_id: Int!,  role_id: Int!, page: Int!, size: Int!) {
@@ -984,6 +1010,7 @@ export const useUserSchemaStore = create((set, get) => ({
       });
   },
   createuserroles: async (userId, roleId) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createuserrole(user_id: Int!, role_id: Int! ) {
@@ -1014,6 +1041,7 @@ export const useUserSchemaStore = create((set, get) => ({
       });
   },
   deleteuserroles: async (userId, roleId) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        deleteuserrole(user_id: Int!, role_id: Int! ) {
@@ -1054,6 +1082,7 @@ export const useFeatureSchemaStore = create((set, get) => ({
   page: 1,
   size: 15,
   getfeatures: async () => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query { features(page: Int!, size: Int!) {
              id
@@ -1093,6 +1122,7 @@ export const useFeatureSchemaStore = create((set, get) => ({
       });
   },
   getfeature: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {  feature(id: Int!) {
            id
@@ -1130,6 +1160,7 @@ export const useFeatureSchemaStore = create((set, get) => ({
       });
   },
   createfeature: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createfeature(input: CreateFeatureInput) {
@@ -1174,6 +1205,7 @@ export const useFeatureSchemaStore = create((set, get) => ({
       });
   },
   updatefeature: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           updatefeature(input: UpdateFeatureInput) {
@@ -1214,6 +1246,7 @@ export const useFeatureSchemaStore = create((set, get) => ({
       });
   },
   deletefeature: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           deletefeature(id: Int!)
@@ -1245,6 +1278,7 @@ export const useFeatureSchemaStore = create((set, get) => ({
   // relation OTM/MTM
 
   getfeatureendpoints: async (featureId, endpointId, page, size) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {
             featureendpoints( feature_id: Int!,  endpoint_id: Int!, page: Int!, size: Int!) {
@@ -1288,6 +1322,7 @@ export const useFeatureSchemaStore = create((set, get) => ({
       });
   },
   createfeatureendpoints: async (featureId, endpointId) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createfeatureendpoint(feature_id: Int!, endpoint_id: Int! ) {
@@ -1318,6 +1353,7 @@ export const useFeatureSchemaStore = create((set, get) => ({
       });
   },
   deletefeatureendpoints: async (featureId, endpointId) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        deletefeatureendpoint(feature_id: Int!, endpoint_id: Int! ) {
@@ -1357,6 +1393,7 @@ export const useEndpointSchemaStore = create((set, get) => ({
   page: 1,
   size: 15,
   getendpoints: async () => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query { endpoints(page: Int!, size: Int!) {
              id
@@ -1396,6 +1433,7 @@ export const useEndpointSchemaStore = create((set, get) => ({
       });
   },
   getendpoint: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {  endpoint(id: Int!) {
            id
@@ -1433,6 +1471,7 @@ export const useEndpointSchemaStore = create((set, get) => ({
       });
   },
   createendpoint: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createendpoint(input: CreateEndpointInput) {
@@ -1478,6 +1517,7 @@ export const useEndpointSchemaStore = create((set, get) => ({
       });
   },
   updateendpoint: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           updateendpoint(input: UpdateEndpointInput) {
@@ -1520,6 +1560,7 @@ export const useEndpointSchemaStore = create((set, get) => ({
       });
   },
   deleteendpoint: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           deleteendpoint(id: Int!)
@@ -1559,6 +1600,7 @@ export const usePageSchemaStore = create((set, get) => ({
   page: 1,
   size: 15,
   getpages: async () => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query { pages(page: Int!, size: Int!) {
              id
@@ -1597,6 +1639,7 @@ export const usePageSchemaStore = create((set, get) => ({
       });
   },
   getpage: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {  page(id: Int!) {
            id
@@ -1633,6 +1676,7 @@ export const usePageSchemaStore = create((set, get) => ({
       });
   },
   createpage: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
 	        createpage(input: CreatePageInput) {
@@ -1675,6 +1719,7 @@ export const usePageSchemaStore = create((set, get) => ({
       });
   },
   updatepage: async (data) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           updatepage(input: UpdatePageInput) {
@@ -1714,6 +1759,7 @@ export const usePageSchemaStore = create((set, get) => ({
       });
   },
   deletepage: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       mutation: ` mutation {
           deletepage(id: Int!)
@@ -1753,6 +1799,7 @@ export const useJWTSaltSchemaStore = create((set, get) => ({
   page: 1,
   size: 15,
   getjwtsalts: async () => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query { jwtsalts(page: Int!, size: Int!) {
              id
@@ -1789,6 +1836,7 @@ export const useJWTSaltSchemaStore = create((set, get) => ({
       });
   },
   getjwtsalt: async (id) => {
+    let token = useLogInStore.getState().access_token;
     const pdata = {
       query: ` query {  jwtsalt(id: Int!) {
            id
@@ -1822,110 +1870,7 @@ export const useJWTSaltSchemaStore = create((set, get) => ({
         console.log(responseError);
       });
   },
-  createjwtsalt: async (data) => {
-    const pdata = {
-      mutation: ` mutation {
-	        createjwtsalt(input: CreateJWTSaltInput) {
-	         id
-	         salta
-	         saltb
-
-	        }}
-	    `,
-      variables: {
-        input: {
-          salta: data.salta,
-          saltb: data.saltb,
-        },
-      },
-    };
-
-    await btmClient
-      .request({
-        method: "POST",
-        url: postURL,
-        headers: {
-          "Content-Type": "application/json",
-          "X-APP-TOKEN": token,
-        },
-        data: pdata,
-      })
-      .then(function (response) {
-        console.log(response.data);
-        set((state) => ({
-          ...state,
-          jwtsalt: response?.data?.jwtsalt,
-        }));
-      })
-      .catch((response, error) => {
-        const responseError = response?.data?.details;
-        console.log(responseError);
-      });
-  },
-  updatejwtsalt: async (data) => {
-    const pdata = {
-      mutation: ` mutation {
-          updatejwtsalt(input: UpdateJWTSaltInput) {
-           id
-           salta
-           saltb
-
-          }}
-      `,
-      variables: {
-        input: {
-          salta: data.salta,
-          saltb: data.saltb,
-        },
-      },
-    };
-
-    await btmClient
-      .request({
-        method: "POST",
-        url: postURL,
-        headers: {
-          "Content-Type": "application/json",
-          "X-APP-TOKEN": token,
-        },
-        data: pdata,
-      })
-      .then(function (response) {
-        console.log(response.data);
-      })
-      .catch((response, error) => {
-        const responseError = response?.data?.details;
-        console.log(responseError);
-      });
-  },
-  deletejwtsalt: async (id) => {
-    const pdata = {
-      mutation: ` mutation {
-          deletejwtsalt(id: Int!)
-        }`,
-      variables: {
-        id: id,
-      },
-    };
-
-    await btmClient
-      .request({
-        method: "POST",
-        url: postURL,
-        headers: {
-          "Content-Type": "application/json",
-          "X-APP-TOKEN": token,
-        },
-        data: pdata,
-      })
-      .then(function (response) {
-        console.log(response.data);
-      })
-      .catch((response, error) => {
-        const responseError = response?.data?.details;
-        console.log(responseError);
-      });
-  },
+ 
   // ######################################
   // relation OTM/MTM
 }));
