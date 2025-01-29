@@ -5,9 +5,13 @@ import { useLogInStore } from "./loginstore";
 
 // https://goblue-back.onrender.com/api/v1
 export const btmClient = axios.create({
-  baseURL: "http://localhost:8500/api/v1",
+  baseURL: "https://open-btm.onrender.com/api/v1",
   timeout: 10000,
 });
+// export const btmClient = axios.create({
+//   baseURL: "http://localhost:8500/api/v1",
+//   timeout: 10000,
+// });
 const postURL = "/admin";
 
 //#######################################################
@@ -1870,7 +1874,7 @@ export const useJWTSaltSchemaStore = create((set, get) => ({
         console.log(responseError);
       });
   },
- 
+
   // ######################################
   // relation OTM/MTM
 }));

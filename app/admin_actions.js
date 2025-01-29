@@ -2,7 +2,8 @@
 import axios from "axios";
 import { cookies } from "next/headers";
 
-const BaseURL = "http://localhost:8500/api/v1";
+const BaseURL = "https://open-btm.onrender.com/api/v1";
+// const BaseURL = "http://localhost:8500/api/v1";
 
 //#######################################################
 //  graph admin requests

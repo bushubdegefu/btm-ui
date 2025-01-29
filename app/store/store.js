@@ -4,8 +4,13 @@ import { useLogInStore } from "./loginstore";
 import { btmClient } from "./pstore";
 
 // https://goblue-back.onrender.com/api/v1
+// export const projClient = axios.create({
+//   baseURL: "http://localhost:8500/api/v1",
+//   timeout: 10000,
+// });
+
 export const projClient = axios.create({
-  baseURL: "http://localhost:8500/api/v1",
+  baseURL: "https://open-btm.onrender.com/api/v1",
   timeout: 10000,
 });
 const postURL = "/project";

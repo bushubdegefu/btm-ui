@@ -16,6 +16,13 @@ import { useEffect } from "react";
 import { loggin } from "../actions";
 import { useLogInStore } from "../store/loginstore";
 import { useUtilStore } from "../store/utilcommon";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function LoginPage() {
   const login = useLogInStore((state) => state.setToken);
@@ -73,6 +80,26 @@ export default function LoginPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="px-5 m-5 text-black">
+            <Dialog className="p-0">
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  Before you login
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-full flex flex-col items-start justify-center w-3/5 pt-16">
+                <DialogTitle>Note</DialogTitle>
+                <DialogDescription>
+                  user: supterbtm@mail.com
+                  <br />
+                  password: default@123
+                  <br />
+                  pages partially connected to database, some functionalites
+                  might not work
+                </DialogDescription>
+              </DialogContent>
+            </Dialog>
+          </div>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div className="space-y-2">
