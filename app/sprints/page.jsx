@@ -1,16 +1,15 @@
 import { Search } from "lucide-react";
 
-import SprintCard, { AddNewSprint } from "./client";
 import { Input } from "@/components/ui/input";
 import { Suspense } from "react";
 import SprintCards from "./sprint-cards";
-import { create_sprint } from "../actions";
+import { AddNewSprint } from "./client";
 
 export default function SprintList() {
   return (
     <div className="container mx-auto bg-gray-200 p-6 space-y-5">
       <div className="w-full">
-        <AddNewSprint addSprint={create_sprint} />
+        <AddNewSprint />
       </div>
       <div className="w-full ">
         <h1 className="text-2xl font-bold mb-6">Sprints</h1>

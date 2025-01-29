@@ -1,8 +1,5 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -10,11 +7,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useLogInStore } from "../store/loginstore";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import jsCookie from "js-cookie";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import jsCookie from "js-cookie";
 import { loggin } from "../actions";
+import { useLogInStore } from "../store/loginstore";
 import { useUtilStore } from "../store/utilcommon";
 
 export default function LoginPage() {
@@ -24,7 +24,7 @@ export default function LoginPage() {
   const refresh_token = useLogInStore((state) => state.refresh_token);
   const current_project = useLogInStore((state) => state.current_project);
   const current_user = useLogInStore((state) => state.user);
-  const getUserProjects = useLogInStore((state) => state.getUserProjects);
+
   const pageSize = useUtilStore((state) => state.size);
   const router = useRouter();
 
@@ -60,13 +60,6 @@ export default function LoginPage() {
       router.push("/sprints");
     }
   }, [status]);
-
-  // useEffect(() => {
-  //   // let curr_proj = jsCookie.get("current_project");
-  //   if (curr_proj != null) {
-  //     router.push("/sprints");
-  //   }
-  // }, [current_project]);
 
   return (
     <div className="min-h-screen w-full bg-gray-100 flex flex-col justify-center items-center p-4">

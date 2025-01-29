@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import jsCookie from "js-cookie";
-import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -13,30 +12,43 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function PaginagtionBottom() {
-  const router = useRouter();
+export default function PaginagtionBottom({ total_items }) {
+  // const router = useRouter();
+  // const path = usePathname();
   const pageSize = useUtilStore((state) => state.size);
+  const setPage = useUtilStore((state) => state.setPage);
+
   const setPageSize = useUtilStore((state) => state.setSize);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const total_pages =
+    Math.ceil(parseFloat(total_items) / pageSize) > 1
+      ? Math.ceil(parseFloat(total_items) / pageSize)
+      : 1;
+
   useEffect(() => {
+    setPageSize(pageSize);
     jsCookie.set("page_size", pageSize, { expires: 7, path: "/" });
-    router.refresh();
+  });
+
+  useEffect(() => {
+    setCurrentPage(1);
+    jsCookie.set("page_size", pageSize, { expires: 7, path: "/" });
   }, [pageSize]);
 
   useEffect(() => {
+    setPage(currentPage);
     jsCookie.set("current_page", currentPage, { expires: 7, path: "/" });
-    router.refresh();
   }, [currentPage]);
 
   return (
     <>
-      <div className="mt-4 flex justify-between items-center">
+      <div className="p-5 m-2 flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <span>Show</span>
           <Select value={pageSize} onValueChange={setPageSize}>
             <SelectTrigger className="w-[70px]">
-              <SelectValue placeholder={`${pageSize}`} />
+              <SelectValue placeholder="20" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="2">2</SelectItem>
@@ -57,9 +69,12 @@ export default function PaginagtionBottom() {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          {/* <span>{`Page ${currentPage} of ${Math.ceil(filteredTests.length / itemsPerPage)}`}</span> */}
-          <span>{`Page ${currentPage}`}</span>
-          <Button onClick={() => setCurrentPage(currentPage + 1)}>
+          <span>{`Page ${currentPage} of ${total_pages}`}</span>
+
+          <Button
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={currentPage == total_pages}
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

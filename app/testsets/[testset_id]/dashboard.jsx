@@ -140,8 +140,8 @@ export default function TestSetDashboard() {
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Test Execution Dashboard</h1>
-      <div className="grid grid-cols-2 gap-6 mb-6">
-        <Card>
+      <div className="grid grid-cols-2 gap-6 mb-6 p-8">
+        <Card className="p-5">
           <CardHeader>
             <CardTitle>Execution Rate</CardTitle>
           </CardHeader>
@@ -182,7 +182,7 @@ export default function TestSetDashboard() {
           </CardContent>
         </Card>
       </div>
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-6 p-8">
         <Card>
           <CardHeader>
             <CardTitle>Issue Distribution</CardTitle>
@@ -233,7 +233,7 @@ export default function TestSetDashboard() {
                       <TableCell>{counts.Failed}</TableCell>
                       <TableCell>{counts.Other}</TableCell>
                     </TableRow>
-                  ),
+                  )
                 )}
               </TableBody>
             </Table>

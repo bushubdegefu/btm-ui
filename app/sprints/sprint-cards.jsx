@@ -1,28 +1,35 @@
-import { get_sprints } from "../actions";
-import SprintCard from "./client";
+"use client";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { get_sprints } from "../actions";
+import SprintCard from "./client";
 
+import { useEffect, useState } from "react";
 import PaginagtionBottom from "../components/generic/pagination";
-import { cookies } from "next/headers";
+import { useUtilStore } from "../store/utilcommon";
 
-export default async function SprintCards() {
-  const currentSprints = await get_sprints();
+export default function SprintCards() {
+  const [, setEditedSprint] = useState();
+  const [sprints, setSprints] = useState();
+  const [total, setTotal] = useState();
+  const refreshTrigor = useUtilStore((state) => state.refreshTrigor);
+  const itemsPerPage = useUtilStore((state) => state.size);
+  const currentPage = useUtilStore((state) => state.page);
+
+  useEffect(() => {
+    const reload = async () => {
+      const items = await get_sprints();
+      setEditedSprint(items?.sprints);
+      setSprints(items?.sprints);
+      setTotal(items.total);
+    };
+    reload();
+  }, [itemsPerPage, currentPage, refreshTrigor]);
 
   return (
     <>
@@ -47,13 +54,13 @@ export default async function SprintCards() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentSprints?.map((sprint) => (
-              <SprintCard key={sprint.id} sprint={sprint} />
+            {sprints?.map((sprint) => (
+              <SprintCard key={sprint?.id} sprint={sprint} />
             ))}
           </TableBody>
         </Table>
 
-        <PaginagtionBottom />
+        <PaginagtionBottom total_items={total} />
       </div>
     </>
   );

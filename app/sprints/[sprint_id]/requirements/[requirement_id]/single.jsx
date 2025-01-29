@@ -1,8 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -11,23 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ChevronDown,
-  ChevronUp,
-  Edit,
-  Plus,
-  Check,
-  X,
-  PlusIcon,
-  XIcon,
-  Trash2,
-  CalendarIcon,
-  ClockIcon,
-  Trash,
-  Trash2Icon,
-  ActivityIcon,
-  Pencil,
-} from "lucide-react";
+import { Edit, Plus, Check, X, Trash2, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +22,6 @@ import {
 } from "@/components/ui/dialog";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -50,62 +32,75 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  QuillContentRenderer,
-  QuillEditor,
-} from "@/app/components/generic/editor";
 import SingleUserStorySummary from "./summary";
+import TipTapEditor from "@/app/components/generic/tiptap";
+import {
+  create_test,
+  delete_test,
+  get_requirement,
+  get_requirements,
+  get_requirementtests,
+  get_test,
+  update_requirement,
+} from "@/app/actions";
+import { PersonIcon } from "@radix-ui/react-icons";
+import { useRouter } from "next/navigation";
+import PaginagtionBottom from "@/app/components/generic/pagination";
+import { useUtilStore } from "@/app/store/utilcommon";
 
-// import {
-//   updateSprint,
-//   deleteSprint,
-//   updateRequirement,
-//   addRequirement,
-//   deleteRequirement,
-// } from "./actions";
-
-const initialSprint = {
-  id: 1,
-  name: "Requirement 1",
-  description: `<p><strong>User Login &amp; Session Management</strong></p><p><strong>User Login:</strong></p><ul><li>Implement user authentication (email and password).</li><li>Add validation for required fields and format checks (e.g., valid email).</li><li>Implement password encryption and secure login.</li><li>Allow "Forgot Password" functionality.</li><li>Implement error messages for incorrect credentials.</li></ul><p><strong>Session Management:</strong></p><ul><li>Create session tokens for logged-in users.</li><li>Implement session timeout and auto logout after inactivity.</li><li>Ensure that session persists across page reloads using cookies or local storage.</li><li>Implement the "Remember Me" feature.</li><li>Handle session expiration and redirect to login page.</li></ul><p><strong>Security &amp; Privacy:</strong></p><ul><li>Implement CAPTCHA on login page to prevent brute-force attacks.</li><li>Ensure secure password storage using hashing algorithms (e.g., bcrypt).</li><li>Add two-factor authentication (2FA) option for users.</li><li>Perform security testing for login vulnerabilities (SQL injection, XSS, etc.).</li><li><strong>Testing &amp; Bug Fixes:</strong></li><li>Write unit tests for login functionality.</li><li>Test session management across different browsers and devices.</li><li>Fix any identified bugs from previous sprints related to login or session handling.</li></ul><p><strong>UI/UX Enhancements:</strong></p><ul><li>Design user-friendly login interface.</li><li>Display success and error messages clearly on the login screen.</li><li>Optimize login page for mobile responsiveness.</li></ul><p><br></p>`,
-  tests: [
-    { id: "1", name: "Test 1", description: "Description 1" },
-    { id: "2", name: "Test 2", description: "Description 2" },
-  ],
-  purpose: `"<ol><li><strong>Purpose</strong>: <em>As a user, I want to log into my account securely so that I can access my personal information without the risk of unauthorized access.</em></li></ol><ul><li>This user story focuses on implementing a secure login system for protecting user data and ensuring privacy.</li></ul><ol><li><strong>Purpose</strong>: <em>As a shopper, I want to be able to filter products by category and price so that I can quickly find items that match my budget and preferences.</em></li></ol><ul><li>The goal here is to enhance the shopping experience by providing relevant product filters for easier navigation.</li></ul><p><br></p>"`,
-};
-
-export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
-  const [requirement, setRequirement] = useState(initialSprint);
+export default function SprintrequirementDetails({
+  sprint_id,
+  requirment_id,
+  test_id,
+}) {
+  const [requirement, setRequirement] = useState();
+  const [tests, setTests] = useState();
+  const [editRequirement, setEditRequirement] = useState();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedTest, setEditedTest] = useState(requirement);
   const [newTest, setNewTest] = useState({
     name: "",
     description: "",
+    requirement_id: requirment_id,
   });
+  const [total, setTotal] = useState();
 
-  const teamMembers = [
-    {
-      id: "1",
-      name: "Jane Doe",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: "2",
-      name: "John Smith",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: "3",
-      name: "Alice Johnson",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: "4",
-      name: "Bob Williams",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-  ];
+  const setRefreshTrigor = useUtilStore((state) => state.setRefreshTrigor);
+  const refreshTrigor = useUtilStore((state) => state.refreshTrigor);
+  const itemsPerPage = useUtilStore((state) => state.size);
+  const currentPage = useUtilStore((state) => state.page);
+
+  // single requirment loading effect
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const result = await get_requirement(requirment_id);
+        setRequirement(result);
+        setEditRequirement(result);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+      }
+    };
+
+    loadData();
+  }, [get_requirements, requirment_id, refreshTrigor]);
+
+  // use requirment tests loading effect
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const tests = await get_requirementtests(requirment_id);
+
+        setTests(tests?.tests);
+        setTotal(tests?.total);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+      }
+    };
+
+    loadData();
+  }, [requirment_id, itemsPerPage, currentPage, refreshTrigor]);
 
   const initialUserStoryData = {
     title: "Implement user authentication",
@@ -113,66 +108,44 @@ export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
     businessValue: 4,
     effort: 3,
     priority: "High",
-    assignee: teamMembers[0],
-  };
-
-  const handleEdit = (requirement) => {
-    // setEditedTest(requirement);
-    setIsEditing(true);
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-    console.log(editForm);
+    assignee: { name: "no one" },
   };
 
   const handleRequirementUpdate = async (e) => {
     e.preventDefault();
-
+    // console.log(editRequirement);
+    await update_requirement(editRequirement);
+    setRefreshTrigor(!refreshTrigor);
     setIsEditing(false);
   };
 
-  const handleRequirementDelete = async () => {
-    // Redirect to sprints list or show a message
-  };
-
-  const handleTestUpdate = async (requirement) => {};
-
-  const handleTestAdd = (e) => {
+  const handleTestAdd = async (e) => {
     e.preventDefault();
-
     console.log(newTest);
-    // setNewTest({ name: "", description: "" });
+    await create_test(newTest);
+    setRefreshTrigor(!refreshTrigor);
   };
 
-  const handleTestDelete = async (requirementId) => {};
-
-  const handleCancel = () => {
-    setIsEditing(false);
-  };
-
-  const handleEditorChange = (e) => {
-    setNewTest({
-      ...newTest,
-      description: e,
-    });
-  };
-  const handleInlineEditorChange = (e) => {
-    setEditedTest({
-      ...editedTest,
+  const handleTipTapEditorChange = (e) => {
+    setEditRequirement({
+      ...editRequirement,
       description: e,
     });
   };
 
-  const handleInlineEditorRequirementChange = (e) => {
-    setRequirement({
-      ...requirement,
-      description: e,
-    });
+  const descriptionChange = (e) => {
+    setNewTest({ ...newTest, description: e });
+  };
+  const stepsChange = (e) => {
+    setNewTest({ ...newTest, steps: e });
+  };
+
+  const resultChange = (e) => {
+    setNewTest({ ...newTest, expected_result: e });
+  };
+
+  const handleRefresh = () => {
+    setRefreshTrigor(!refreshTrigor);
   };
   return (
     <div className="container mx-auto space-y-10  p-4">
@@ -186,14 +159,17 @@ export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
                   htmlFor="sprintName"
                   className="text-sm font-medium text-gray-700"
                 >
-                  Sprint Name
+                  Requirment Name
                 </Label>
                 <Input
                   id="requirementName"
                   name="name"
-                  value={requirement?.name}
+                  value={editRequirement?.name}
                   onChange={(e) =>
-                    setRequirement({ ...requirement, name: e.target.value })
+                    setEditRequirement({
+                      ...editRequirement,
+                      name: e.target.value,
+                    })
                   }
                   placeholder="Enter sprint name"
                   className="mt-1 block w-full"
@@ -206,88 +182,42 @@ export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
                 >
                   Description
                 </Label>
-                {/* <Textarea
-                  id="sprintDescription"
-                  value={sprint.description}
-                  onChange={(e) =>
-                    setSprint({ ...sprint, description: e.target.value })
-                  }
-                  placeholder="Enter sprint description"
-                  className="mt-1 block w-full"
-                  rows={4}
-                /> */}
-                <QuillEditor
-                  name="exist-description"
-                  initialValue={requirement?.description}
-                  onChange={handleInlineEditorRequirementChange}
+
+                <TipTapEditor
+                  inital_value={editRequirement?.description}
+                  onChange={handleTipTapEditorChange}
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label
-                    htmlFor="startDate"
+                    htmlFor="assigned_to"
                     className="text-sm font-medium text-gray-700"
                   >
-                    Start Date
+                    Assigned To
                   </Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={requirement?.startDate}
-                    onChange={(e) =>
-                      setRequirement({
-                        ...requirement,
-                        startDate: e.target.value,
+                  <Select
+                    id="assigned_to"
+                    name="assigned_to"
+                    value={editRequirement?.assigned_to}
+                    onValueChange={(value) =>
+                      setEditRequirement({
+                        ...editRequirement,
+                        assigned_to: value,
                       })
                     }
-                    className="mt-1 block w-full"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="duration"
-                    className="text-sm font-medium text-gray-700"
                   >
-                    Duration (days)
-                  </Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    value={requirement.duration}
-                    onChange={(e) =>
-                      setSprint({
-                        ...requirement,
-                        duration: parseInt(e.target.value),
-                      })
-                    }
-                    min="1"
-                    className="mt-1 block w-full"
-                  />
+                    <SelectTrigger className="mt-1 w-full">
+                      <SelectValue placeholder="assigned too" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value="developer">Developer</SelectItem>
+                      <SelectItem value="project">Project</SelectItem>
+                      <SelectItem value="qat">QA</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-              <div>
-                <Label
-                  htmlFor="status"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Status
-                </Label>
-                <Select
-                  id="status"
-                  value={requirement.status}
-                  onValueChange={(value) =>
-                    setSprint({ ...requirement, status: value })
-                  }
-                >
-                  <SelectTrigger className="mt-1 w-full">
-                    <SelectValue placeholder="Select sprint status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="planning">Planning</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
             <div className="flex justify-end space-x-4 pt-4">
@@ -325,42 +255,19 @@ export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
-                <Button
-                  onClick={handleRequirementDelete}
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-600 hover:bg-red-50"
-                >
-                  <Trash2Icon className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-4">
               {/* <p className="text-gray-600">{sprint.description}</p> */}
-              <QuillContentRenderer content={requirement?.description} />
+              <TipTapEditor inital_value={requirement?.description} />
               <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                 <div className="flex items-center">
-                  <CalendarIcon className="w-5 h-5 mr-2 text-gray-400" />
-                  <span>Start: {requirement?.startDate || "Not set"}</span>
-                </div>
-                <div className="flex items-center">
-                  <ClockIcon className="w-5 h-5 mr-2 text-gray-400" />
+                  <PersonIcon className="w-5 h-5 mr-2 text-gray-400" />
                   <span>
-                    Duration:{" "}
-                    {requirement?.duration
-                      ? `${requirement?.duration} days`
-                      : "Not set"}
+                    Assigned To: {requirement?.assigned_to || "Not set"}
                   </span>
-                </div>
-                <div className="flex items-center">
-                  <ActivityIcon className="w-5 h-5 mr-2 text-gray-400" />
-                  <span>Status: </span>
-                  <Badge variant="outline" className="ml-2 capitalize">
-                    {requirement?.status || "Not set"}
-                  </Badge>
                 </div>
               </div>
             </div>
@@ -381,9 +288,6 @@ export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
           <TabsTrigger className="flex-1 text-center" value="summary">
             Summary
           </TabsTrigger>
-          <TabsTrigger className="flex-1 text-center" value="review_notes">
-            Review Notes
-          </TabsTrigger>
           <TabsTrigger className="flex-1 text-center" value="documents">
             Documents
           </TabsTrigger>
@@ -399,7 +303,7 @@ export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
                 </Button>
               </div>
             </DialogTrigger>
-            <DialogContent className="max-w-[80svw] sm:max-w-[60svw] md:max-w-[50svw] lg:max-w-[40svw]">
+            <DialogContent className="max-w-full w-3/5">
               <form onSubmit={handleTestAdd} className="mt-4 space-y-4">
                 <DialogHeader>
                   <DialogTitle className="">Add New Test</DialogTitle>
@@ -409,35 +313,48 @@ export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
                 </DialogHeader>
 
                 <div className="w-full  space-y-5 shadow-2xl p-5 rounded-3xl">
-                  <Input
-                    value={newTest.name}
-                    onChange={(e) =>
-                      setNewTest({ ...newTest, name: e.target.value })
-                    }
-                    placeholder="New Test Name"
-                  />
-                  {/* <Textarea
-                    value={newTest.description}
-                    onChange={(e) =>
-                      setNewTest({
-                        ...newTest,
-                        description: e.target.value,
-                      })
-                    }
-                    placeholder="New Requirement Description"
-                  /> */}
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      name="name"
+                      value={newTest.name}
+                      onChange={(e) =>
+                        setNewTest({ ...newTest, name: e.target.value })
+                      }
+                      placeholder="New Test Name"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
-                    <QuillEditor
+                    <TipTapEditor
                       name="description"
-                      initialValue={newTest.description}
-                      onChange={handleEditorChange}
+                      initialValue={newTest?.description}
+                      onChange={descriptionChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="steps">Steps</Label>
+                    <TipTapEditor
+                      name="steps"
+                      initialValue={newTest?.steps}
+                      onChange={stepsChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="expected_result">Expected Result</Label>
+                    <TipTapEditor
+                      name="expected_result"
+                      initialValue={newTest?.expected_result}
+                      onChange={resultChange}
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit" onClick={null}>
-                    Add Requirements
+                  <Button
+                    type="submit"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    Add Test
                   </Button>
                 </DialogFooter>
               </form>
@@ -448,12 +365,13 @@ export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
               <TableRow>
                 <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="justify-center items-center">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requirement.tests.map((test) => (
+              {tests?.map((test) => (
                 <RequirementTestRow
                   key={"rei test d" + test?.id}
                   test={test}
@@ -463,26 +381,22 @@ export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
               ))}
             </TableBody>
           </Table>
+          <PaginagtionBottom total_items={total} />
         </TabsContent>
         <TabsContent value="purpose">
-          <br />
-          <h3 className="px-16 text-xl font-semibold mb-4">Purpose</h3>
-          <PurposeViewEdit value={requirement?.purpose} />
+          <PurposeViewEdit
+            value={requirement?.purpose}
+            requirment_id={requirement?.id}
+            refreshTrigor={handleRefresh}
+          />
         </TabsContent>
         <TabsContent value="summary">
           <br />
           <h3 className="text-xl font-semibold px-16 mb-4">Summary</h3>
           <SingleUserStorySummary
             initialData={initialUserStoryData}
-            teamMembers={teamMembers}
+            teamMembers={null}
           />
-        </TabsContent>
-        <TabsContent value="review_notes">
-          <br />
-          <h3 className="text-xl px-16 font-semibold mb-4">
-            Review Notes/ Feedbacks
-          </h3>
-          <ReviewNotesViewEdit value={requirement?.purpose} />
         </TabsContent>
         <TabsContent value="documents"></TabsContent>
       </Tabs>
@@ -490,142 +404,84 @@ export default function SprintrequirementDetails({ sprint_id, requirment_id }) {
   );
 }
 
-export function RequirementTestRow({
-  test,
-  requirment_id,
-  sprint_id,
-  // onEdit,
-  // onDelete,
-  // onEditRequierment,
-  // onDeleteRequierment,
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedTest, setEditedTest] = useState(test);
+export function RequirementTestRow({ test, requirment_id, sprint_id }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const setRefreshTrigor = useUtilStore((state) => state.setRefreshTrigor);
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditedTest((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-    console.log(editedTest);
-    console.log(sprint_id);
-    console.log(requirment_id);
-  };
-
-  const handleSave = () => {
-    // onEdit(requirement);
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setEditedTest(test);
-    setIsEditing(false);
+  const handleTestDelete = async () => {
+    await delete_test(test?.id);
+    setRefreshTrigor();
   };
 
   return (
     <>
       <TableRow key={test.id}>
         <TableCell>{test.id}</TableCell>
-        <TableCell>
-          {isEditing ? (
-            <Input
-              id="name"
-              name="name"
-              value={editedTest?.name}
-              onChange={handleEditChange}
-            />
-          ) : (
-            <Link
-              href={`/sprints/${sprint_id}/requirements/${requirment_id}/tests/${test?.id}`}
-            >
-              {test?.name}
-            </Link>
-          )}
+        <TableCell className="w-8/12">
+          <Link
+            href={`/sprints/${sprint_id}/requirements/${requirment_id}/tests/${test?.id}`}
+          >
+            {test?.name}
+          </Link>
         </TableCell>
         <TableCell>
-          {isEditing ? (
-            <Textarea
-              id="description"
-              name="description"
-              value={editedTest?.description}
-              onChange={handleEditChange}
-            />
-          ) : (
-            test.description
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <div className="flex space-x-2">
-              <Button variant="ghost" size="icon" onClick={null}>
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={handleCancel}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex space-x-2">
-              <Button variant="ghost" size="icon" onClick={handleEdit}>
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Trash2 className="h-4 w-4" />
+          <div className="flex space-x-2 justify-center items-center">
+            <Dialog open={isOpen} onOpenChange={() => setIsOpen(!isOpen)}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirm Deletion</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this test? This action
+                    cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsOpen(false)}>
+                    Cancel
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Confirm Deletion</DialogTitle>
-                    <DialogDescription>
-                      Are you sure you want to delete this test? This action
-                      cannot be undone.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={null}>
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleDelete(test.id)}
-                    >
-                      Delete
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
+                  <Button
+                    variant="destructive"
+                    type="submit"
+                    onClick={handleTestDelete}
+                  >
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </TableCell>
       </TableRow>
     </>
   );
 }
 
-export function PurposeViewEdit({ value }) {
+export function PurposeViewEdit({ value, requirment_id, refreshTrigor }) {
   const [isEditing, setIsEditing] = useState(false);
   const [purpose, setPurpose] = useState(value);
-  const [tempPurpose, setTempPurpose] = useState(value);
+  const [tempPurpose, setTempPurpose] = useState({ purpose: value });
 
-  const handleEditorPurposeChange = (content) => {
-    setTempPurpose(content);
+  const handleTipTapEditorChange = (e) => {
+    setTempPurpose({
+      ...tempPurpose,
+      purpose: e,
+    });
   };
 
-  const handleSave = () => {
-    setPurpose(tempPurpose);
-    setIsEditing(false);
+  const updatePurpose = async () => {
+    await update_requirement({ ...tempPurpose, id: requirment_id });
+    if (refreshTrigor) {
+      refreshTrigor();
+    }
   };
 
   const handleCancel = () => {
-    setTempPurpose(purpose);
+    // setTempPurpose(purpose);
     setIsEditing(false);
   };
 
@@ -634,34 +490,38 @@ export function PurposeViewEdit({ value }) {
       <div className="relative w-4/5 shadow-2xl border-2 p-5">
         {isEditing ? (
           <>
-            <QuillEditor
-              name="purpose"
-              initialValue={tempPurpose}
-              onChange={handleEditorPurposeChange}
-            />
-            <div className="mt-2 flex justify-end space-x-2">
-              <Button size="sm" onClick={handleSave}>
-                <Check className="mr-2 h-4 w-4" />
-                Save
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleCancel}>
-                <X className="mr-2 h-4 w-4" />
-                Cancel
-              </Button>
-            </div>
+            <form onSubmit={updatePurpose}>
+              <TipTapEditor
+                name="purpose"
+                inital_value={tempPurpose.purpose}
+                onChange={handleTipTapEditorChange}
+              />
+              <div className="mt-2 flex justify-end space-x-2">
+                <Button size="sm" type="submit">
+                  <Check className="mr-2 h-4 w-4" />
+                  Save
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleCancel}>
+                  <X className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+              </div>
+            </form>
           </>
         ) : (
           <>
-            <QuillContentRenderer content={purpose} />
-            <Button
-              size="sm"
-              variant="ghost"
-              className="absolute top-0 right-0"
-              onClick={() => setIsEditing(true)}
-            >
-              <Pencil className="h-4 w-4" />
-              <span className="sr-only">Edit</span>
-            </Button>
+            <div className="w-full p-5 m-5">
+              <TipTapEditor inital_value={purpose} />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-0 right-0"
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="h-4 w-4" />
+                <span className="sr-only">Edit</span>
+              </Button>
+            </div>
           </>
         )}
       </div>
@@ -673,10 +533,6 @@ export function ReviewNotesViewEdit({ value }) {
   const [isEditing, setIsEditing] = useState(false);
   const [note, setNote] = useState(value);
   const [tempNote, setTempNote] = useState(value);
-
-  const handleEditorPurposeChange = (content) => {
-    setTempNote(content);
-  };
 
   const handleSave = () => {
     setNote(tempNote);
@@ -693,10 +549,10 @@ export function ReviewNotesViewEdit({ value }) {
       <div className="relative shadow-2xl w-4/5 border-2 p-5">
         {isEditing ? (
           <>
-            <QuillEditor
+            <TipTapEditor
               name="purpose"
-              initialValue={tempNote}
-              onChange={handleEditorPurposeChange}
+              inital_value={tempNote}
+              onChange={setTempNote}
             />
             <div className="mt-2 flex justify-end space-x-2">
               <Button size="sm" onClick={handleSave}>
@@ -711,7 +567,7 @@ export function ReviewNotesViewEdit({ value }) {
           </>
         ) : (
           <>
-            <QuillContentRenderer content={note} />
+            <TipTapEditor inital_value={note} />
             <Button
               size="sm"
               variant="ghost"

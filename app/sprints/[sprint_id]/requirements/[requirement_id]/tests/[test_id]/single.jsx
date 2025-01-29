@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,20 +12,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  ChevronDown,
-  ChevronUp,
   Edit,
   Plus,
   Check,
   X,
-  PlusIcon,
-  XIcon,
-  Trash2,
   CalendarIcon,
   ClockIcon,
   Trash,
   Trash2Icon,
   ActivityIcon,
+  Trash2,
 } from "lucide-react";
 import {
   Dialog,
@@ -48,10 +44,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  QuillContentRenderer,
-  QuillEditor,
-} from "@/app/components/generic/editor";
+import TipTapEditor from "@/app/components/generic/tiptap";
+import { get_test, get_testtestruns, update_test } from "@/app/actions";
+import { useUtilStore } from "@/app/store/utilcommon";
+import { TestRunRows } from "@/app/testsets/[testset_id]/runs/[test_instance_id]/single";
+import PaginagtionBottom from "@/app/components/generic/pagination";
 
 // import {
 //   updateSprint,
@@ -77,39 +74,58 @@ export default function SprintRequirementTestDetails({
   requirement_id,
   test_id,
 }) {
-  const [test, setTest] = useState(initialSprint);
+  const [test, setTest] = useState();
+  const [runs, setRuns] = useState();
+  const [editTest, setEditTest] = useState();
   const [isEditing, setIsEditing] = useState(false);
   const [editedRun, setEditedRun] = useState(test);
-  const [newRun, setNewRun] = useState({
-    name: "",
-    description: "",
-  });
 
-  const handleEdit = (test) => {
-    // setEditedRun(requirement);
-    setIsEditing(true);
-  };
+  const [total, setTotal] = useState();
+  const refreshTrigor = useUtilStore((state) => state.refreshTrigor);
+  const setRefreshTrigor = useUtilStore((state) => state.setRefreshTrigor);
+  const itemsPerPage = useUtilStore((state) => state.size);
+  const currentPage = useUtilStore((state) => state.page);
 
-  const handleEditChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-    console.log(editForm);
-  };
+  // use efferct to load tests
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const result = await get_test(test_id);
+        setTest(result);
+        setEditTest(result);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+      }
+    };
+    loadData();
+  }, [test_id, requirement_id, itemsPerPage, currentPage, refreshTrigor]);
 
-  const handleRequirementUpdate = async (e) => {
+  // use efferct to load runs
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const runs = await get_testtestruns(test_id);
+        setRuns(runs?.test_runs);
+        setTotal(runs?.total);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+      }
+    };
+    loadData();
+  }, [test_id, requirement_id, itemsPerPage, currentPage, refreshTrigor]);
+
+  const handleTestUpdate = async (e) => {
     e.preventDefault();
-
+    await update_test(editTest);
+    setRefreshTrigor();
     setIsEditing(false);
   };
 
   const handleRequirementDelete = async () => {
     // Redirect to sprints list or show a message
   };
-
-  const handleTestUpdate = async (test) => {};
 
   const handleTestAdd = (e) => {
     e.preventDefault();
@@ -120,28 +136,38 @@ export default function SprintRequirementTestDetails({
 
   const handleTestDelete = async (testId) => {};
 
-  const handleCancel = () => {
-    setIsEditing(false);
-  };
-
   const handleEditorChange = (e) => {
     setNewRun({
       ...newRun,
       description: e,
     });
   };
+
   const handleInlineEditorChange = (e) => {
-    setEditedRun({
-      ...editedRun,
+    setEditTest({
+      ...editTest,
       description: e,
     });
   };
+  const handleInlineStepsChange = (e) => {
+    setEditTest({
+      ...editTest,
+      steps: e,
+    });
+  };
+  const handleInlineResultChange = (e) => {
+    setEditTest({
+      ...editTest,
+      expected_result: e,
+    });
+  };
+
   return (
     <div className="container mx-auto space-y-10  p-4">
       <h1 className="text-2xl font-bold mb-4">Test Details</h1>
       {isEditing ? (
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <form onSubmit={handleRequirementUpdate} className="space-y-6">
+          <form onSubmit={handleTestUpdate} className="space-y-6">
             <div className="space-y-4">
               <div>
                 <Label
@@ -153,101 +179,52 @@ export default function SprintRequirementTestDetails({
                 <Input
                   id="requirementName"
                   name="name"
-                  value={test?.name}
-                  onChange={(e) => setTest({ ...test, name: e.target.value })}
+                  value={editTest?.name}
+                  onChange={(e) =>
+                    setEditTest({ ...editTest, name: e.target.value })
+                  }
                   placeholder="Enter sprint name"
                   className="mt-1 block w-full"
                 />
               </div>
               <div>
                 <Label
-                  htmlFor="requirementDescription"
+                  htmlFor="test-description"
                   className="text-sm font-medium text-gray-700"
                 >
                   Description
                 </Label>
-                {/* <Textarea
-                  id="sprintDescription"
-                  value={sprint.description}
-                  onChange={(e) =>
-                    setSprint({ ...sprint, description: e.target.value })
-                  }
-                  placeholder="Enter sprint description"
-                  className="mt-1 block w-full"
-                  rows={4}
-                /> */}
-                <QuillEditor
+                <TipTapEditor
                   name="exist-description"
-                  initialValue={editedRun?.description}
+                  inital_value={editTest?.description}
                   onChange={handleInlineEditorChange}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label
-                    htmlFor="startDate"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Start Date
-                  </Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={test?.startDate}
-                    onChange={(e) =>
-                      setTest({
-                        ...test,
-                        startDate: e.target.value,
-                      })
-                    }
-                    className="mt-1 block w-full"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="duration"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Duration (days)
-                  </Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    value={test?.duration}
-                    onChange={(e) =>
-                      setSprint({
-                        ...test,
-                        duration: parseInt(e.target.value),
-                      })
-                    }
-                    min="1"
-                    className="mt-1 block w-full"
-                  />
-                </div>
+              <div>
+                <Label
+                  htmlFor="test-steps"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Steps
+                </Label>
+                <TipTapEditor
+                  name="steps"
+                  inital_value={editTest?.steps}
+                  onChange={handleInlineStepsChange}
+                />
               </div>
               <div>
                 <Label
-                  htmlFor="status"
+                  htmlFor="test-expected_results"
                   className="text-sm font-medium text-gray-700"
                 >
-                  Status
+                  Expected Result
                 </Label>
-                <Select
-                  id="status"
-                  value={test?.status}
-                  onValueChange={(value) =>
-                    setSprint({ ...test, status: value })
-                  }
-                >
-                  <SelectTrigger className="mt-1 w-full">
-                    <SelectValue placeholder="Select sprint status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="planning">Planning</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
+                <TipTapEditor
+                  name="steps"
+                  inital_value={editTest?.expected_result}
+                  onChange={handleInlineResultChange}
+                />
               </div>
             </div>
             <div className="flex justify-end space-x-4 pt-4">
@@ -283,242 +260,42 @@ export default function SprintRequirementTestDetails({
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
-                <Button
-                  onClick={handleRequirementDelete}
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-600 hover:bg-red-50"
-                >
-                  <Trash2Icon className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-4">
               {/* <p className="text-gray-600">{sprint.description}</p> */}
-              <QuillContentRenderer content={test?.description} />
-              <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                <div className="flex items-center">
-                  <CalendarIcon className="w-5 h-5 mr-2 text-gray-400" />
-                  <span>Start: {test?.startDate || "Not set"}</span>
-                </div>
-                <div className="flex items-center">
-                  <ClockIcon className="w-5 h-5 mr-2 text-gray-400" />
-                  <span>
-                    Duration:{" "}
-                    {test?.duration ? `${test?.duration} days` : "Not set"}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <ActivityIcon className="w-5 h-5 mr-2 text-gray-400" />
-                  <span>Status: </span>
-                  <Badge variant="outline" className="ml-2 capitalize">
-                    {test?.status || "Not set"}
-                  </Badge>
-                </div>
-              </div>
+              <p className="p-5">{test?.name}</p>
+              <TipTapEditor inital_value={test?.description} />
+              <TipTapEditor inital_value={test?.steps} />
+              <TipTapEditor inital_value={test?.expected_result} />
             </div>
           </CardContent>
         </Card>
       )}
 
       <Separator className="my-4" />
-      <h3 className="text-xl font-semibold mb-4">Tests</h3>
-      <Dialog>
-        <DialogTrigger className="flex w-full" asChild>
-          <div className="flex w-full justify-end">
-            <Button className="w-6/12  md:w-4/12 lg:w-3/12 bg-emerald-600 hover:bg-emerald-700 text-white">
-              <Plus className="mr-2 h-4 w-4" /> Run Test
-            </Button>
-          </div>
-        </DialogTrigger>
-        <DialogContent className="max-w-[80svw] sm:max-w-[60svw] md:max-w-[50svw] lg:max-w-[40svw]">
-          <form onSubmit={handleTestAdd} className="mt-4 space-y-4">
-            <DialogHeader>
-              <DialogTitle className="">Run Test</DialogTitle>
-              <DialogDescription>
-                Enter the details for the existing Run Test.
-              </DialogDescription>
-            </DialogHeader>
+      <h3 className="text-xl font-semibold mb-4">Test Runs</h3>
 
-            <div className="w-full  space-y-5 shadow-2xl p-5 rounded-3xl">
-              <Input
-                value={newRun.name}
-                onChange={(e) => setNewRun({ ...newRun, name: e.target.value })}
-                placeholder="New Requirement Name"
-              />
-              {/* <Textarea
-                value={newRun.description}
-                onChange={(e) =>
-                  setNewRun({
-                    ...newRun,
-                    description: e.target.value,
-                  })
-                }
-                placeholder="New Requirement Description"
-              /> */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <QuillEditor
-                  name="description"
-                  initialValue={newRun.description}
-                  onChange={handleEditorChange}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit" onClick={null}>
-                Run Test
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
+            <TableHead>Run Status</TableHead>
+            <TableHead>Result</TableHead>
+            <TableHead>Updated At</TableHead>
+            <TableHead>Created At</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {test?.runs?.map((run) => (
-            <RequirementTestRunRow
-              key={"rei test run id" + run?.id}
-              run={run}
-              sprint_id={sprint_id}
-              requirement_id={requirement_id}
-              test_id={test_id}
-            />
+          {runs?.map((run) => (
+            <TestRunRows key={"rei test run id" + run?.id} run={run} />
           ))}
         </TableBody>
       </Table>
+      <PaginagtionBottom total_items={total} />
     </div>
-  );
-}
-
-export function RequirementTestRunRow({
-  requirement_id,
-  sprint_id,
-  test_id,
-  run,
-  // onEdit,
-  // onDelete,
-  // onEditRequierment,
-  // onDeleteRequierment,
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedRun, setEditedRun] = useState(run);
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditedRun((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-    console.log(editedRun);
-    console.log(sprint_id);
-    console.log(requirement_id);
-    console.log(test_id);
-  };
-
-  const handleSave = () => {
-    // onEdit(requirement);
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setEditedRun(run);
-    setIsEditing(false);
-  };
-
-  return (
-    <>
-      <TableRow key={run?.id}>
-        <TableCell>{run?.id}</TableCell>
-        <TableCell>
-          {isEditing ? (
-            <Input
-              id="name"
-              name="name"
-              value={editedRun?.name}
-              onChange={handleEditChange}
-            />
-          ) : (
-            <Link
-              href={`/sprints/${sprint_id}/requirements/${requirement_id}/tests/${test_id}/runs/${run?.id}`}
-            >
-              {run?.name}
-            </Link>
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <Textarea
-              id="description"
-              name="description"
-              value={editedRun?.description}
-              onChange={handleEditChange}
-            />
-          ) : (
-            run?.description
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <div className="flex space-x-2">
-              <Button variant="ghost" size="icon" onClick={null}>
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={handleCancel}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex space-x-2">
-              <Button variant="ghost" size="icon" onClick={handleEdit}>
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Confirm Deletion</DialogTitle>
-                    <DialogDescription>
-                      Are you sure you want to delete this test? This action
-                      cannot be undone.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={null}>
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleDelete(run?.id)}
-                    >
-                      Delete
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
-        </TableCell>
-      </TableRow>
-    </>
   );
 }

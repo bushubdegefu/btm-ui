@@ -134,7 +134,7 @@ export default function HomePage() {
               development process.
             </p>
             <Button className="bg-white text-emerald-600 hover:bg-emerald-50 text-lg px-8 py-3">
-              <Link href="/users">Demo Dashboard</Link>
+              <Link href="/settings">Demo Dashboard</Link>
             </Button>
           </div>
         </section>

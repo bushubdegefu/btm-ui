@@ -26,7 +26,11 @@ const SingleUserStorySummary = ({ initialData, teamMembers }) => {
           .map((_, index) => (
             <Star
               key={index}
-              className={`w-4 h-4 cursor-pointer ${index < value ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+              className={`w-4 h-4 cursor-pointer ${
+                index < value
+                  ? "text-yellow-400 fill-yellow-400"
+                  : "text-gray-300"
+              }`}
               onClick={() => handleStarClick(field, index + 1)}
             />
           ))}
@@ -62,7 +66,7 @@ const SingleUserStorySummary = ({ initialData, teamMembers }) => {
   const handleSelectChange = (field, value) => {
     if (field === "assignee") {
       const selectedAssignee = teamMembers.find(
-        (member) => member.id === value,
+        (member) => member.id === value
       );
       if (selectedAssignee) {
         setData((prevData) => ({ ...prevData, assignee }));
@@ -174,7 +178,7 @@ const SingleUserStorySummary = ({ initialData, teamMembers }) => {
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {teamMembers.map((member) => (
+                {teamMembers?.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     <div className="flex items-center gap-2">
                       <Avatar className="w-6 h-6">

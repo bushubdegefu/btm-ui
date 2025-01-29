@@ -6,6 +6,7 @@ export const useUtilStore = create(
     (set, get) => ({
       page: 1,
       size: 20,
+      refreshTrigor: false,
       history: [],
 
       // Set the current page
@@ -13,6 +14,13 @@ export const useUtilStore = create(
         set((state) => ({
           ...state,
           page,
+        }));
+      },
+      // Set the current page
+      setRefreshTrigor: () => {
+        set((state) => ({
+          ...state,
+          refreshTrigor: !state.refreshTrigor,
         }));
       },
 
@@ -54,6 +62,6 @@ export const useUtilStore = create(
     {
       name: "util-storage", // name of the item in the storage (must be unique)
       storage: createJSONStorage(() => sessionStorage), // (optional) by default, 'localStorage' is used
-    },
-  ),
+    }
+  )
 );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -39,6 +39,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  create_issue,
+  delete_issue,
+  get_issues,
+  update_issue,
+} from "../actions";
+import { useUtilStore } from "../store/utilcommon";
+import PaginagtionBottom from "../components/generic/pagination";
 
 // Sample issues data
 const initialIssues = [
@@ -47,7 +55,7 @@ const initialIssues = [
     name: "Login button not working",
     description: "Users unable to log in due to non-responsive login button",
     status: "Open",
-    severity: "High",
+    sevierity: "High",
     assignedTo: "John Doe",
     createdDate: "2023-06-01",
     updatedDate: "2023-06-02",
@@ -79,26 +87,43 @@ const statusColors = {
 };
 
 export default function IssueTable() {
-  const [issues, setIssues] = useState(initialIssues);
+  const [issues, setIssues] = useState();
   const [sortColumn, setSortColumn] = useState("id");
   const [sortDirection, setSortDirection] = useState("asc");
   const [editingId, setEditingId] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
+
   const [newIssue, setNewIssue] = useState({
-    id: "",
-    name: "",
-    description: "",
-    status: "Open",
-    severity: "Medium",
-    assignedTo: "",
-    createdDate: new Date().toISOString().split("T")[0],
-    updatedDate: new Date().toISOString().split("T")[0],
+    issue_name: "",
+    issue_description: "",
+    issue_status: "Open",
+    test_run_id: 0,
+    test_instance_id: 0,
   });
 
-  const sortedIssues = [...issues].sort((a, b) => {
-    if (a[sortColumn] < b[sortColumn]) return sortDirection === "asc" ? -1 : 1;
-    if (a[sortColumn] > b[sortColumn]) return sortDirection === "asc" ? 1 : -1;
-    return 0;
-  });
+  const [total, setTotal] = useState();
+  const itemsPerPage = useUtilStore((state) => state.size);
+  const currentPage = useUtilStore((state) => state.page);
+  const refreshTrigor = useUtilStore((state) => state.refreshTrigor);
+
+  useEffect(() => {
+    const reload = async () => {
+      const items = await get_issues();
+      setIssues(items?.issues);
+      setTotal(items.total);
+    };
+    reload();
+  }, [itemsPerPage, currentPage, refreshTrigor]);
+
+  const sortedIssues = issues
+    ? [...issues].sort((a, b) => {
+        if (a[sortColumn] < b[sortColumn])
+          return sortDirection === "asc" ? -1 : 1;
+        if (a[sortColumn] > b[sortColumn])
+          return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      })
+    : [];
 
   const handleSort = (column) => {
     if (column === sortColumn) {
@@ -118,50 +143,26 @@ export default function IssueTable() {
     );
   };
 
-  const handleEdit = (id) => {
-    setEditingId(id);
-  };
-
-  const handleSave = (id) => {
-    setEditingId(null);
-    const updatedIssue = issues.find((issue) => issue.id === id);
-    updatedIssue.updatedDate = new Date().toISOString().split("T")[0];
-    setIssues([...issues]);
-  };
-
-  const handleCancel = () => {
-    setEditingId(null);
-  };
-
-  const handleDelete = (id) => {
-    setIssues(issues.filter((issue) => issue.id !== id));
-  };
-
-  const handleInputChange = (e, id, field) => {
-    setIssues(
-      issues.map((issue) =>
-        issue.id === id ? { ...issue, [field]: e.target.value } : issue,
-      ),
-    );
-  };
-
   const handleNewIssueChange = (field, value) => {
     setNewIssue({ ...newIssue, [field]: value });
   };
 
-  const handleAddNewIssue = () => {
-    if (newIssue.id && newIssue.name) {
-      setIssues([...issues, newIssue]);
+  const handleAddNewIssue = async () => {
+    console.log(newIssue);
+    if (
+      newIssue.issue_description &&
+      newIssue.issue_name &&
+      newIssue.issue_status
+    ) {
+      await create_issue(newIssue);
       setNewIssue({
-        id: "",
-        name: "",
-        description: "",
-        status: "Open",
-        severity: "Medium",
-        assignedTo: "",
-        createdDate: new Date().toISOString().split("T")[0],
-        updatedDate: new Date().toISOString().split("T")[0],
+        issue_name: "",
+        issue_description: "",
+        issue_status: "Open",
+        test_run_id: 0,
+        test_instance_id: 0,
       });
+      setIsOpen(false);
     }
   };
 
@@ -173,13 +174,13 @@ export default function IssueTable() {
           <Input type="text" placeholder="Search issues..." className="pl-10" />
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
         </div>
-        <Dialog>
+        <Dialog open={isOpen} onOpenChange={() => setIsOpen(!isOpen)}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
               <Plus className="mr-2 h-4 w-4" /> Add New Issue
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="max-w-full w-3/5">
             <DialogHeader>
               <DialogTitle>Add New Issue</DialogTitle>
               <DialogDescription>
@@ -188,24 +189,45 @@ export default function IssueTable() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="id" className="text-right">
-                  ID
-                </Label>
-                <Input
-                  id="id"
-                  value={newIssue.id}
-                  onChange={(e) => handleNewIssueChange("id", e.target.value)}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">
                   Name
                 </Label>
                 <Input
                   id="name"
                   value={newIssue.name}
-                  onChange={(e) => handleNewIssueChange("name", e.target.value)}
+                  onChange={(e) =>
+                    handleNewIssueChange("issue_name", e.target.value)
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Test Run ID
+                </Label>
+                <Input
+                  id="test_run_id"
+                  type="number"
+                  min="0"
+                  value={newIssue?.test_run_id}
+                  onChange={(e) =>
+                    handleNewIssueChange("test_run_id", e.target.value)
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Test Instance ID
+                </Label>
+                <Input
+                  id="test_run_id"
+                  type="number"
+                  min="0"
+                  value={newIssue?.test_instance_id}
+                  onChange={(e) =>
+                    handleNewIssueChange("test_instance_id", e.target.value)
+                  }
                   className="col-span-3"
                 />
               </div>
@@ -217,7 +239,7 @@ export default function IssueTable() {
                   id="description"
                   value={newIssue.description}
                   onChange={(e) =>
-                    handleNewIssueChange("description", e.target.value)
+                    handleNewIssueChange("issue_description", e.target.value)
                   }
                   className="col-span-3"
                 />
@@ -229,7 +251,7 @@ export default function IssueTable() {
                 <Select
                   value={newIssue.status}
                   onValueChange={(value) =>
-                    handleNewIssueChange("status", value)
+                    handleNewIssueChange("issue_status", value)
                   }
                 >
                   <SelectTrigger className="col-span-3">
@@ -243,43 +265,13 @@ export default function IssueTable() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="severity" className="text-right">
-                  Severity
-                </Label>
-                <Select
-                  value={newIssue.severity}
-                  onValueChange={(value) =>
-                    handleNewIssueChange("severity", value)
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select severity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                    <SelectItem value="Critical">Critical</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="assignedTo" className="text-right">
-                  Assigned To
-                </Label>
-                <Input
-                  id="assignedTo"
-                  value={newIssue.assignedTo}
-                  onChange={(e) =>
-                    handleNewIssueChange("assignedTo", e.target.value)
-                  }
-                  className="col-span-3"
-                />
-              </div>
             </div>
             <DialogFooter>
-              <Button type="submit" onClick={handleAddNewIssue}>
+              <Button
+                type="submit"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handleAddNewIssue}
+              >
                 Add Issue
               </Button>
             </DialogFooter>
@@ -313,144 +305,191 @@ export default function IssueTable() {
                 className="cursor-pointer"
                 onClick={() => handleSort("severity")}
               >
-                Severity {<SortIcon column="severity" />}
+                Test Run ID {<SortIcon column="severity" />}
               </TableHead>
               <TableHead
                 className="cursor-pointer"
                 onClick={() => handleSort("assignedTo")}
               >
-                Assigned To {<SortIcon column="assignedTo" />}
+                Test Instance ID {<SortIcon column="assignedTo" />}
               </TableHead>
-              <TableHead
-                className="cursor-pointer"
-                onClick={() => handleSort("createdDate")}
-              >
-                Created Date {<SortIcon column="createdDate" />}
-              </TableHead>
-              <TableHead
-                className="cursor-pointer"
-                onClick={() => handleSort("updatedDate")}
-              >
-                Updated Date {<SortIcon column="updatedDate" />}
-              </TableHead>
+
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedIssues.map((issue) => (
-              <TableRow key={issue.id}>
-                <TableCell>{issue.id}</TableCell>
-                <TableCell>{issue.name}</TableCell>
-                <TableCell>
-                  {editingId === issue.id ? (
-                    <Input
-                      value={issue.description}
-                      onChange={(e) =>
-                        handleInputChange(e, issue.id, "description")
-                      }
-                    />
-                  ) : (
-                    issue.description
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingId === issue.id ? (
-                    <Select
-                      value={issue.status}
-                      onValueChange={(value) =>
-                        handleInputChange(
-                          { target: { value } },
-                          issue.id,
-                          "status",
-                        )
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Open">Open</SelectItem>
-                        <SelectItem value="Fixed">Fixed</SelectItem>
-                        <SelectItem value="Reopened">Reopened</SelectItem>
-                        <SelectItem value="Closed">Closed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Badge className={`${statusColors[issue.status]}`}>
-                      {issue.status}
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge className={`${severityColors[issue.severity]}`}>
-                    {issue.severity}
-                  </Badge>
-                </TableCell>
-                <TableCell>{issue.assignedTo}</TableCell>
-                <TableCell>{issue.createdDate}</TableCell>
-                <TableCell>{issue.updatedDate}</TableCell>
-                <TableCell>
-                  {editingId === issue.id ? (
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleSave(issue.id)}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleCancel}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(issue.id)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Confirm Deletion</DialogTitle>
-                            <DialogDescription>
-                              Are you sure you want to delete this issue? This
-                              action cannot be undone.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => {}}>
-                              Cancel
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              onClick={() => handleDelete(issue.id)}
-                            >
-                              Delete
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
+              <IssueRow key={issue.id} issue={issue} />
             ))}
           </TableBody>
         </Table>
+
+        <PaginagtionBottom total_items={total} />
       </div>
     </div>
+  );
+}
+
+function IssueRow({ issue }) {
+  const [editingId, setEditingId] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [editIssue, setEditIssue] = useState(issue);
+  const setRefreshTrigor = useUtilStore((state) => state.setRefreshTrigor);
+
+  const handleSave = async () => {
+    await update_issue(editIssue);
+    setRefreshTrigor();
+    setEditingId(false);
+  };
+
+  const handleDelete = async () => {
+    await delete_issue(issue.id);
+    setRefreshTrigor();
+  };
+
+  return (
+    <TableRow>
+      <TableCell>{issue?.id}</TableCell>
+      <TableCell>
+        {editingId ? (
+          <Input
+            value={editIssue?.issue_name}
+            onChange={(e) =>
+              setEditIssue({ ...editIssue, issue_name: e.target.value })
+            }
+          />
+        ) : (
+          issue?.issue_name
+        )}
+      </TableCell>
+      <TableCell>
+        {editingId ? (
+          <Input
+            value={editIssue?.issue_description}
+            onChange={(e) =>
+              setEditIssue({ ...editIssue, issue_description: e.target.value })
+            }
+          />
+        ) : (
+          issue?.issue_description
+        )}
+      </TableCell>
+      <TableCell>
+        {editingId ? (
+          <Select
+            value={editIssue?.issue_status}
+            onValueChange={(value) =>
+              setEditIssue({ ...editIssue, issue_status: value })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Open">Open</SelectItem>
+              <SelectItem value="Fixed">Fixed</SelectItem>
+              <SelectItem value="Reopened">Reopened</SelectItem>
+              <SelectItem value="Closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          <Badge className={`${statusColors[issue?.issue_status]}`}>
+            {issue?.issue_status}
+          </Badge>
+        )}
+      </TableCell>
+
+      <TableCell>
+        {editingId ? (
+          <Input
+            id="test_run_id"
+            type="number"
+            min="0"
+            value={editIssue?.test_run_id}
+            onChange={(e) =>
+              setEditIssue({ ...editIssue, test_run_id: e.target.value })
+            }
+            className="col-span-3"
+          />
+        ) : (
+          issue?.test_run_id
+        )}
+      </TableCell>
+      <TableCell>
+        {editingId ? (
+          <Input
+            id="test_instance_id"
+            type="number"
+            min="0"
+            value={editIssue?.test_instance_id}
+            onChange={(e) =>
+              setEditIssue({ ...editIssue, test_instance_id: e.target.value })
+            }
+            className="col-span-3"
+          />
+        ) : (
+          issue?.test_instance_id
+        )}
+      </TableCell>
+      <TableCell>
+        {editingId ? (
+          <div className="flex space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              type="submit"
+              onClick={handleSave}
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditingId(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditingId(true)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Dialog open={isOpen} onOpenChange={() => setIsOpen(!isOpen)}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirm Deletion</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this issue? This action
+                    cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    type="submit"
+                    onClick={handleDelete}
+                  >
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+      </TableCell>
+    </TableRow>
   );
 }

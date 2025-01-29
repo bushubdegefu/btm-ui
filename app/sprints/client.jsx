@@ -1,30 +1,10 @@
 "use client";
-import {
-  ChevronDown,
-  ChevronUp,
-  Edit,
-  Plus,
-  Check,
-  X,
-  PlusIcon,
-  XIcon,
-  Trash2,
-} from "lucide-react";
-import React, { useEffect, useState } from "react";
-
-import { RequirementRow } from "../requirements/requirments";
+import { Check, X, PlusIcon, XIcon, Trash2 } from "lucide-react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TableCell, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -35,22 +15,30 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import Link from "next/link";
-import { QuillEditor } from "../components/generic/editor";
 import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-export default function SprintCard({
-  sprint,
-  onEdit,
-  onDelete,
-  onEditRequierment,
-  onDeleteRequierment,
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
+import { create_sprint, delete_sprint } from "../actions";
+import TipTapEditor from "../components/generic/tiptap";
+import { useUtilStore } from "../store/utilcommon";
+
+export default function SprintCard({ sprint }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedSprint, setEditedSprint] = useState(sprint);
+  const refreshTrigor = useUtilStore((state) => state.refreshTrigor);
+  const setRefreshTrigor = useUtilStore((state) => state.setRefreshTrigor);
 
-  const handleEdit = (id) => {
-    setIsEditing(true);
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    await delete_sprint(e.target.sprint_id.value);
+    setRefreshTrigor();
   };
 
   const handleEditChange = (e) => {
@@ -60,11 +48,6 @@ export default function SprintCard({
       [name]: type === "checkbox" ? checked : value,
     }));
     console.log(editedSprint);
-  };
-
-  const handleSave = () => {
-    onEdit(editedSprint);
-    setIsEditing(false);
   };
 
   const handleCancel = () => {
@@ -118,12 +101,16 @@ export default function SprintCard({
                     <Button variant="outline" onClick={null}>
                       Cancel
                     </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleDelete(sprint.id)}
-                    >
-                      Delete
-                    </Button>
+                    <form onSubmit={handleDelete}>
+                      <input
+                        className="hidden"
+                        value={sprint?.id}
+                        name="sprint_id"
+                      />
+                      <Button type="submit" variant="destructive">
+                        Delete
+                      </Button>
+                    </form>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -135,16 +122,14 @@ export default function SprintCard({
   );
 }
 
-export function AddNewSprint({ addSprint }) {
-  const router = useRouter();
+export function AddNewSprint() {
   const [show, setShow] = useState(false);
   const [newSprint, setNewSprint] = useState({});
+  const [quillContent, setQuillContent] = useState("");
+  const setRefreshTrigor = useUtilStore((state) => state.setRefreshTrigor);
 
-  const handleEditorChange = (e) => {
-    setNewSprint({
-      ...newSprint,
-      description: e,
-    });
+  const handleInlineNewSprintChange = (e) => {
+    setQuillContent(e);
   };
 
   const handleEditChange = (e) => {
@@ -153,20 +138,13 @@ export function AddNewSprint({ addSprint }) {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-
-    // console.log(newSprint);
   };
 
   const handleAddNewSprint = async (event) => {
     event.preventDefault();
-    // let sprint = {};
-    // const formData = new FormData(event.currentTarget);
-    // formData.forEach((value, key) => {
-    //   sprint[key] = value;
-    // });
-    let resp = await addSprint(newSprint);
-    router.refresh();
-    console.log(newSprint);
+    let sprint = { ...newSprint, description: quillContent };
+    await create_sprint(sprint);
+    setRefreshTrigor();
   };
 
   return (
@@ -196,15 +174,91 @@ export function AddNewSprint({ addSprint }) {
                 <Input
                   name="name"
                   onChange={handleEditChange}
-                  value={newSprint?.name}
                   placeholder="Sprint Name"
                   required
                 />
-                <QuillEditor
-                  name="description"
-                  initialValue={newSprint?.description}
-                  onChange={handleEditorChange}
+                <TipTapEditor
+                  initialValue={"Add Descripition here"}
+                  onChange={handleInlineNewSprintChange}
                 />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label
+                      htmlFor="startDate"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Start Date
+                    </Label>
+                    <Input
+                      id="start_date"
+                      name="start_date"
+                      type="date"
+                      value={
+                        newSprint?.start_date
+                          ? new Date(newSprint.start_date)
+                              .toISOString()
+                              .split("T")[0]
+                          : ""
+                      }
+                      onChange={(e) =>
+                        setNewSprint({
+                          ...newSprint,
+                          start_date: e.target.value,
+                        })
+                      }
+                      className="mt-1 block w-full"
+                    />
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="duration"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Duration (days)
+                    </Label>
+                    <Input
+                      id="duration"
+                      name="duration"
+                      type="number"
+                      value={newSprint?.duration || ""}
+                      onChange={(e) => {
+                        setNewSprint({
+                          ...newSprint,
+                          duration: e.target.value,
+                        });
+                      }}
+                      min="1"
+                      className="mt-1 block w-full"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label
+                    htmlFor="status"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Status
+                  </Label>
+                  <Select
+                    id="status"
+                    name="status"
+                    value={newSprint?.status}
+                    onValueChange={(value) =>
+                      setNewSprint({ ...newSprint, status: value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1 w-full">
+                      <SelectValue placeholder="Select sprint status" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value="Open">Open</SelectItem>
+                      <SelectItem value="Ongoing">Ongoing</SelectItem>
+                      <SelectItem value="Closed">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="flex justify-end space-x-2">
                   <Button
                     type="submit"

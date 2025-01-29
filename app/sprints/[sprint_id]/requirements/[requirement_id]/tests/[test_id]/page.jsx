@@ -1,12 +1,13 @@
 import SprintRequirementTestDetails from "./single";
 
-export default function SingleTest({ params }) {
+export default async function SingleTest({ params }) {
+  const { sprint_id, requirement_id, test_id } = await params;
   return (
     <>
       <SprintRequirementTestDetails
-        sprint_id={params?.sprint_id}
-        requirement_id={params?.requirement_id}
-        test_id={params?.test_id}
+        sprint_id={sprint_id}
+        requirement_id={requirement_id}
+        test_id={test_id}
       />
     </>
   );

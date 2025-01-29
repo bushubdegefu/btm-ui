@@ -2,7 +2,13 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  create_requirement,
+  delete_requirement,
+  get_sprint,
+  get_sprintrequirements,
+  update_sprint,
+} from "@/app/actions";
 import {
   Table,
   TableBody,
@@ -11,20 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import {
-  ChevronDown,
-  ChevronUp,
   Edit,
   Plus,
-  Check,
-  X,
-  PlusIcon,
-  XIcon,
   Trash2,
   CalendarIcon,
   ClockIcon,
-  Trash,
-  Trash2Icon,
   ActivityIcon,
 } from "lucide-react";
 import {
@@ -35,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
@@ -48,99 +48,73 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  QuillContentRenderer,
-  QuillEditor,
-} from "@/app/components/generic/editor";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import UserStorySummary from "./summary";
-// import {
-//   updateSprint,
-//   deleteSprint,
-//   updateRequirement,
-//   addRequirement,
-//   deleteRequirement,
-// } from "./actions";
 
-export default function SprintDetails({
-  sprint_id,
-  sprint_requirments,
-  getSprint,
-}) {
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import PaginagtionBottom from "@/app/components/generic/pagination";
+import { useRouter } from "next/navigation";
+import TipTapEditor from "@/app/components/generic/tiptap";
+import { useUtilStore } from "@/app/store/utilcommon";
+
+export default function SprintDetails({ sprint_id, sprint_requirments }) {
+  const router = useRouter();
   const [sprint, setSprint] = useState({});
+  const [reqs, setReqs] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedRequirement, setEditedRequirment] = useState();
-  const [editSprint, setEditSprint] = useState();
+  const [editSprint, setEditSprint] = useState("");
+  const [description, setDescription] = useState("");
+  const [purpose, setPurpose] = useState("");
   const [newRequirement, setNewRequirement] = useState({
     name: "",
     description: "",
+    bussiness_value: 0,
+    sprint_id: sprint_id,
   });
 
-  const handleEdit = (requirment) => {
-    // setEditedRequirment(requirement);
-    setIsEditing(true);
-  };
+  const [isOpen, setIsOpen] = useState(false);
+  const [total, setTotal] = useState();
+  const [refreshTrigor, setRefreshTrigor] = useState(false);
+  const itemsPerPage = useUtilStore((state) => state.size);
+  const currentPage = useUtilStore((state) => state.page);
 
+  // sprint fetching effect
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const result = await getSprint(sprint_id);
-        setSprint(result);
-        setEditSprint(result);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-      }
+      const result = await get_sprint(sprint_id);
+      setSprint(result);
+      setEditSprint(result);
     };
 
     loadData();
-  }, [getSprint]);
+  }, [itemsPerPage, currentPage, refreshTrigor]);
 
-  const handleEditChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-    console.log(editForm);
-  };
+  //  requirment loadin effect
+  useEffect(() => {
+    const loadData = async () => {
+      const result = await get_sprintrequirements(sprint_id);
+
+      setReqs(result?.requirements);
+      setTotal(result?.total);
+    };
+
+    loadData();
+  }, [itemsPerPage, currentPage, refreshTrigor]);
 
   const handleSprintUpdate = async (e) => {
     e.preventDefault();
-    // update_sprint(editSprint)
+    await update_sprint(editSprint);
+    setRefreshTrigor(!refreshTrigor);
+
     setIsEditing(false);
   };
 
-  const handleSprintDelete = async () => {
-    // Redirect to sprints list or show a message
-  };
-
-  const handleRequirementUpdate = async (requirement) => {};
-
-  const handleRequirementAdd = (e) => {
+  const handleRequirementAdd = async (e) => {
     e.preventDefault();
-
-    console.log(newRequirement);
+    // console.log(newRequirement);
+    await create_requirement({ ...newRequirement, description, purpose });
+    setRefreshTrigor(!refreshTrigor);
+    setIsOpen(!isOpen);
     // setNewRequirement({ name: "", description: "" });
-  };
-
-  const handleRequirementDelete = async (requirementId) => {};
-
-  const handleCancel = () => {
-    setIsEditing(false);
-  };
-
-  const handleEditorChange = (e) => {
-    setNewRequirement({
-      ...newRequirement,
-      description: e,
-    });
-  };
-  const handleInlineEditorChange = (e) => {
-    setEditedRequirment({
-      ...editedRequirement,
-      description: e,
-    });
   };
 
   const handleInlineSprintEditorChange = (e) => {
@@ -166,6 +140,7 @@ export default function SprintDetails({
                 </Label>
                 <Input
                   id="sprintName"
+                  name="sprint_name"
                   value={editSprint.name}
                   onChange={(e) =>
                     setEditSprint({ ...editSprint, name: e.target.value })
@@ -181,9 +156,9 @@ export default function SprintDetails({
                 >
                   Description
                 </Label>
-                <QuillEditor
-                  name="exist-description"
-                  initialValue={editSprint?.description}
+                <TipTapEditor
+                  name="description"
+                  inital_value={editSprint?.description}
                   onChange={handleInlineSprintEditorChange}
                 />
               </div>
@@ -196,11 +171,21 @@ export default function SprintDetails({
                     Start Date
                   </Label>
                   <Input
-                    id="startDate"
+                    id="start_date"
+                    name="start_date"
                     type="date"
-                    value={sprint?.startDate}
+                    value={
+                      editSprint?.start_date
+                        ? new Date(editSprint.start_date)
+                            .toISOString()
+                            .split("T")[0]
+                        : ""
+                    }
                     onChange={(e) =>
-                      setSprint({ ...sprint, startDate: e.target.value })
+                      setEditSprint({
+                        ...editSprint,
+                        start_date: e.target.value,
+                      })
                     }
                     className="mt-1 block w-full"
                   />
@@ -214,11 +199,12 @@ export default function SprintDetails({
                   </Label>
                   <Input
                     id="duration"
+                    name="duration"
                     type="number"
-                    value={sprint.duration}
+                    value={editSprint.duration}
                     onChange={(e) =>
-                      setSprint({
-                        ...sprint,
+                      setEditSprint({
+                        ...editSprint,
                         duration: parseInt(e.target.value),
                       })
                     }
@@ -236,18 +222,20 @@ export default function SprintDetails({
                 </Label>
                 <Select
                   id="status"
-                  value={sprint.status}
+                  name="status"
+                  value={editSprint.status}
                   onValueChange={(value) =>
-                    setSprint({ ...sprint, status: value })
+                    setEditSprint({ ...editSprint, status: value })
                   }
                 >
                   <SelectTrigger className="mt-1 w-full">
                     <SelectValue placeholder="Select sprint status" />
                   </SelectTrigger>
+
                   <SelectContent>
-                    <SelectItem value="planning">Planning</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="Open">Open</SelectItem>
+                    <SelectItem value="Ongoing">Ongoing</SelectItem>
+                    <SelectItem value="Closed">Closed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -255,6 +243,7 @@ export default function SprintDetails({
             <div className="flex justify-end space-x-4 pt-4">
               <Button
                 type="button"
+                name="cancel"
                 variant="outline"
                 onClick={() => setIsEditing(false)}
                 className="px-4 py-2"
@@ -263,6 +252,7 @@ export default function SprintDetails({
               </Button>
               <Button
                 type="submit"
+                name="submit_sprint"
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 Save Changes
@@ -293,12 +283,20 @@ export default function SprintDetails({
           <CardContent className="pt-6">
             <div className="space-y-4">
               {/* <p className="text-gray-600">{sprint.description}</p> */}
-              <QuillContentRenderer content={sprint?.description} />
+              {/* < content= /> */}
+              <div className="w-full">{sprint?.description}</div>
               <br />
               <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                 <div className="flex items-center">
                   <CalendarIcon className="w-5 h-5 mr-2 text-gray-400" />
-                  <span>Start: {sprint?.startDate || "Not set"}</span>
+                  <span>
+                    Start:{" "}
+                    {new Date(sprint?.start_date).toLocaleDateString("en-US", {
+                      month: "short", // Abbreviated month name
+                      day: "numeric", // Day as a number
+                      year: "numeric", // Full year
+                    }) || "Not set"}
+                  </span>
                 </div>
                 <div className="flex items-center">
                   <ClockIcon className="w-5 h-5 mr-2 text-gray-400" />
@@ -326,14 +324,15 @@ export default function SprintDetails({
           <TabsTrigger className="flex-1 text-center" value="user_stories">
             User Stories/Requirments
           </TabsTrigger>
-          <TabsTrigger className="flex-1 text-center" value="summary">
-            Sprint summary
+
+          <TabsTrigger className="flex-1 text-center" value="documents">
+            Documents
           </TabsTrigger>
         </TabsList>
         <TabsContent value="user_stories">
           <br />
           <h3 className="text-xl font-semibold mb-4">Requirements</h3>
-          <Dialog>
+          <Dialog open={isOpen} onOpenChange={() => setIsOpen(!isOpen)}>
             <DialogTrigger className="flex w-full" asChild>
               <div className="flex w-full justify-end">
                 <Button className="w-6/12  md:w-4/12 lg:w-3/12 bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -341,7 +340,7 @@ export default function SprintDetails({
                 </Button>
               </div>
             </DialogTrigger>
-            <DialogContent className="max-w-[80svw] sm:max-w-[60svw] md:max-w-[50svw] lg:max-w-[40svw]">
+            <DialogContent className="max-w-full w-3/4">
               <form onSubmit={handleRequirementAdd} className="mt-4 space-y-4">
                 <DialogHeader>
                   <DialogTitle className="">Add New Requirements</DialogTitle>
@@ -361,27 +360,95 @@ export default function SprintDetails({
                     }
                     placeholder="New Requirement Name"
                   />
-                  {/* <Textarea
-                    value={newRequirement.description}
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <TipTapEditor
+                      name="description"
+                      inital_value={description}
+                      onChange={setDescription}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="purpose">Purpose</Label>
+                    <TipTapEditor
+                      name="purpose"
+                      inital_value={purpose}
+                      onChange={setPurpose}
+                    />
+                  </div>
+                  <Input
+                    name="bussiness_value"
+                    value={newRequirement.bussiness_value}
+                    type="number"
+                    min="1"
+                    max="100"
                     onChange={(e) =>
                       setNewRequirement({
                         ...newRequirement,
-                        description: e.target.value,
+                        bussiness_value: parseInt(e.target.value),
                       })
                     }
-                    placeholder="New Requirement Description"
-                  /> */}
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <QuillEditor
-                      name="description"
-                      initialValue={newRequirement.description}
-                      onChange={handleEditorChange}
-                    />
-                  </div>
+                    placeholder="bussiness value out of 100"
+                  />
+                  <Label
+                    htmlFor="status"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Status
+                  </Label>
+                  <Select
+                    id="status"
+                    name="status"
+                    value={newRequirement.status}
+                    onValueChange={(value) =>
+                      setNewRequirement({ ...newRequirement, status: value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1 w-full">
+                      <SelectValue placeholder="status" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value="Open">Open</SelectItem>
+                      <SelectItem value="Completed">Completed</SelectItem>
+                      <SelectItem value="Amended">Amended</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Label
+                    htmlFor="assigned_to"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Assigned To
+                  </Label>
+                  <Select
+                    id="assigned_to"
+                    name="assigned_to"
+                    value={newRequirement.assigned_to}
+                    onValueChange={(value) =>
+                      setNewRequirement({
+                        ...newRequirement,
+                        assigned_to: value,
+                      })
+                    }
+                  >
+                    <SelectTrigger className="mt-1 w-full">
+                      <SelectValue placeholder="assigned too" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value="developer">Developer</SelectItem>
+                      <SelectItem value="project">Project</SelectItem>
+                      <SelectItem value="qat">QA</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
                 <DialogFooter>
-                  <Button type="submit" onClick={null}>
+                  <Button
+                    type="submit"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
                     Add Requirements
                   </Button>
                 </DialogFooter>
@@ -392,13 +459,12 @@ export default function SprintDetails({
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead className="cursor-pointer">Name</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sprint_requirments?.map((requirement) => (
+              {reqs?.map((requirement) => (
                 <RequirementRow
                   key={"rei d" + requirement?.id}
                   requirment={requirement}
@@ -407,50 +473,25 @@ export default function SprintDetails({
               ))}
             </TableBody>
           </Table>
+          <PaginagtionBottom total_items={total} />
         </TabsContent>
-        <TabsContent value="summary">
+        <TabsContent value="documents">
           <br />
-          <UserStorySummary />
+          <h1>Provision Comming Soon</h1>
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-export function RequirementRow({
-  requirment,
-  sprint_id,
-  // onEdit,
-  // onDelete,
-  // onEditRequierment,
-  // onDeleteRequierment,
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedRequirment, setEditedRequirment] = useState(requirment);
+export function RequirementRow({ requirment, sprint_id }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const setRefreshTrigor = useUtilStore((state) => state.setRefreshTrigor);
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditedRequirment((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-    console.log(editedRequirment);
-    console.log(sprint_id);
-  };
-
-  const handleSave = () => {
-    // onEdit(requirment);
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setEditedRequirment(requirment);
-    setIsEditing(false);
+  const handleDelete = async () => {
+    await delete_requirement(requirment.id);
+    setRefreshTrigor();
+    setIsOpen(false);
   };
 
   return (
@@ -458,75 +499,41 @@ export function RequirementRow({
       <TableRow key={requirment.id}>
         <TableCell>{requirment.id}</TableCell>
         <TableCell>
-          {isEditing ? (
-            <Input
-              id="name"
-              name="name"
-              value={editedRequirment?.name}
-              onChange={handleEditChange}
-            />
-          ) : (
-            <Link href={`/sprints/${sprint_id}/requirements/${requirment?.id}`}>
-              {requirment?.name}
-            </Link>
-          )}
+          <Link href={`/sprints/${sprint_id}/requirements/${requirment?.id}`}>
+            {requirment?.name}
+          </Link>
         </TableCell>
         <TableCell>
-          {isEditing ? (
-            <Textarea
-              id="description"
-              name="description"
-              value={editedRequirment?.description}
-              onChange={handleEditChange}
-            />
-          ) : (
-            requirment.description
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <div className="flex space-x-2">
-              <Button variant="ghost" size="icon" onClick={null}>
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={handleCancel}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex space-x-2">
-              <Button variant="ghost" size="icon" onClick={handleEdit}>
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Trash2 className="h-4 w-4" />
+          <div className="flex space-x-2 justify-center">
+            <Dialog open={isOpen} onOpenChange={() => setIsOpen(!isOpen)}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirm Deletion</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this test? This action
+                    cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsOpen(false)}>
+                    Cancel
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Confirm Deletion</DialogTitle>
-                    <DialogDescription>
-                      Are you sure you want to delete this test? This action
-                      cannot be undone.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={null}>
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleDelete(requirment.id)}
-                    >
-                      Delete
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
+                  <Button
+                    variant="destructive"
+                    type="submit"
+                    onClick={handleDelete}
+                  >
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </TableCell>
       </TableRow>
     </>

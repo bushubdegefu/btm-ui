@@ -73,19 +73,6 @@ export const LayoutProvider = ({ children }) => {
   const pathname = usePathname();
   const params = useParams();
 
-  // console.log("###### ");
-  // // console.log(params);
-  // console.log("###### ");
-  // const { param } = router.query;
-  // // Define the regex pattern to match /sprints/{id}
-  // const sprintPattern = /^\/sprints\/([^/]+)\/requirements$/;
-  // const requirmentPattern = /^\/sprints\/([^/]+)\/requirements\/([^/]+)$/;
-  // const testsPattern = /^\/sprints\/([^/]+)\/requirements\/([^/]+)\/tests$/;
-  // // Test if the current path matches the pattern
-  // const match_one = sprintPattern.test(pathname);
-  // const match_two = requirmentPattern.test(pathname);
-  // const match_three = testsPattern.test(pathname);
-
   if (pathname === "/dashboard" || pathname == "/login") {
     return (
       <html lang="en">
@@ -117,6 +104,27 @@ export const LayoutProvider = ({ children }) => {
                       <Breadcrumb>
                         <BreadcrumbList>
                           <BreadcrumbItem
+                            className={params?.testset_id ? "" : "hidden"}
+                          >
+                            <BreadcrumbLink
+                              href={`/testsets/${params?.testset_id}`}
+                            >
+                              Test Set
+                            </BreadcrumbLink>
+                          </BreadcrumbItem>
+                          <BreadcrumbSeparator
+                            className={params?.test_instance_id ? "" : "hidden"}
+                          />
+                          <BreadcrumbItem
+                            className={params?.test_instance_id ? "" : "hidden"}
+                          >
+                            <BreadcrumbLink
+                              href={`/testsets/${params?.testset_id}/runs/${params?.test_instance_id}`}
+                            >
+                              Runs
+                            </BreadcrumbLink>
+                          </BreadcrumbItem>
+                          <BreadcrumbItem
                             className={params?.sprint_id ? "" : "hidden"}
                           >
                             <BreadcrumbLink
@@ -147,18 +155,6 @@ export const LayoutProvider = ({ children }) => {
                               href={`/sprints/${params?.sprint_id}/requirements/${params?.requirement_id}/tests/${params?.test_id}`}
                             >
                               Tests
-                            </BreadcrumbLink>
-                          </BreadcrumbItem>
-                          <BreadcrumbSeparator
-                            className={params?.run_id ? "" : "hidden"}
-                          />
-                          <BreadcrumbItem
-                            className={params?.run_id ? "" : "hidden"}
-                          >
-                            <BreadcrumbLink
-                              href={`/sprints/${params?.sprint_id}/requirements/${params?.requirement_id}/tests/${params?.test_id}/runs/${params?.run_id}`}
-                            >
-                              Runs
                             </BreadcrumbLink>
                           </BreadcrumbItem>
                         </BreadcrumbList>

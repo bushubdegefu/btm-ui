@@ -3,17 +3,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   BarChart2,
-  Search,
   Settings,
-  Users,
-  AlbumIcon,
   Rocket,
   FileText,
   Folder,
-  PlusCircle,
   Bug,
-  Bell,
-  LucideSidebar,
   LogOut,
 } from "lucide-react";
 import {
@@ -25,8 +19,7 @@ import {
 } from "@/components/ui/select";
 import { useLogInStore } from "./store/loginstore";
 import jsCookie from "js-cookie";
-import { revalidatePath } from "next/cache";
-import { usePathname, useRouter } from "next/navigation";
+import { useUtilStore } from "./store/utilcommon";
 
 const NavItem = ({ icon, label, active, href, handleClick, value }) => {
   return (
@@ -46,12 +39,11 @@ const NavItem = ({ icon, label, active, href, handleClick, value }) => {
 };
 
 export default function SideBarLayout() {
-  const router = useRouter();
   const getUserProjects = useLogInStore((state) => state.getUserProjects);
   const user_projects = useLogInStore((state) => state.user_projects);
   const currentProject = useLogInStore((state) => state.current_project);
   const setCurrentProject = useLogInStore((state) => state.setCurrentProject);
-  const pathname = usePathname();
+  const setRefreshTrigor = useUtilStore((state) => state.setRefreshTrigor);
 
   useEffect(() => {
     getUserProjects();
@@ -59,6 +51,7 @@ export default function SideBarLayout() {
 
   const handleProjectSelect = (value) => {
     setCurrentProject(value);
+    setRefreshTrigor();
 
     // let cur_project = user_projects.filter((dapp) => dapp.id == value)[0];
   };
@@ -68,7 +61,7 @@ export default function SideBarLayout() {
         expires: 7,
         path: "/",
       });
-      router.refresh();
+      setRefreshTrigor();
     }
   }, [currentProject]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -145,14 +138,6 @@ export default function SideBarLayout() {
           value="sprint"
         />
         <NavItem
-          icon={<AlbumIcon />}
-          label="Requirment"
-          active={activeView === "requirement"}
-          handleClick={veiewTab}
-          value="requirement"
-          href="/requirements"
-        />
-        <NavItem
           icon={<FileText />}
           label="Tests"
           active={activeView === "tests"}
@@ -177,21 +162,14 @@ export default function SideBarLayout() {
           value="issues"
           href="/issues"
         />
-        <NavItem
-          icon={<Users />}
-          label="Users"
-          active={activeView === "users"}
-          handleClick={veiewTab}
-          value="users"
-          href="/users"
-        />
+
         <NavItem
           icon={<Settings />}
           label="Settings"
           active={activeView === "settings"}
           handleClick={veiewTab}
-          value="users"
-          href="/users"
+          value="settings"
+          href="/settings"
         />
 
         {loggein ? (

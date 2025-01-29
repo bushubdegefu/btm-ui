@@ -1,27 +1,79 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+// import { Textarea } from "@/components/ui/textarea";
 import "react-quill/dist/quill.snow.css";
+import ReactQuill from "react-quill";
+import { Textarea } from "@/components/ui/textarea";
 
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+// const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+
+// export function QuillEditor({ initialValue, onChange, name = "" }) {
+//   const [editorContent, setEditorContent] = useState(initialValue);
+
+//   useEffect(() => {
+//     if (onChange) {
+//       onChange(editorContent);
+//     }
+//   }, [editorContent]);
+
+//   const modules = {
+//     toolbar: [
+//       [{ header: "1" }, { header: "2" }],
+//       [{ list: "ordered" }, { list: "bullet" }],
+//       ["bold", "italic", "underline"],
+//       ["link"],
+//       ["blockquote"],
+//       ["image"],
+//       ["clean"],
+//     ],
+//   };
+
+//   const formats = [
+//     "header",
+//     "bold",
+//     "italic",
+//     "underline",
+//     "strike",
+//     "blockquote",
+//     "list",
+//     "bullet",
+//     "link",
+//     "image",
+//   ];
+
+//   return (
+//     <div className="quill-editor">
+//       <ReactQuill
+//         theme="snow"
+//         value={editorContent}
+//         onChange={setEditorContent}
+//         modules={modules}
+//         formats={formats}
+//         className="min-h-[200px] w-full custom-quill rounded-lg"
+//       />
+//     </div>
+//   );
+// }
 
 export function QuillEditor({ initialValue, onChange, name = "" }) {
   const [editorContent, setEditorContent] = useState(initialValue);
 
-  const handleChange = (content) => {
-    setEditorContent(content);
+  useEffect(() => {
     if (onChange) {
-      onChange(content);
+      onChange(editorContent);
     }
-  };
+  }, [editorContent]);
 
   const modules = {
     toolbar: [
-      [{ header: [1, 2, false] }],
-      ["bold", "italic", "underline", "strike", "blockquote"],
+      [{ header: "1" }, { header: "2" }],
       [{ list: "ordered" }, { list: "bullet" }],
-      ["link", "image"],
+      ["bold", "italic", "underline"],
+      ["link"],
+      ["blockquote"],
+      ["image"],
       ["clean"],
     ],
   };
@@ -44,7 +96,7 @@ export function QuillEditor({ initialValue, onChange, name = "" }) {
       <ReactQuill
         theme="snow"
         value={editorContent}
-        onChange={handleChange}
+        onChange={setEditorContent}
         modules={modules}
         formats={formats}
         className="min-h-[200px] w-full custom-quill rounded-lg"
@@ -56,11 +108,11 @@ export function QuillEditor({ initialValue, onChange, name = "" }) {
 export function QuillContentRenderer({ content }) {
   return (
     <div className="quill-content">
-      <ReactQuill
+      <Textarea
         value={content}
         readOnly={true}
         theme="bubble"
-        modules={{ toolbar: false }}
+        // modules={{ toolbar: false }}
       />
     </div>
   );
