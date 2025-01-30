@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import jsCookie from "js-cookie";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { loggin } from "../actions";
 import { useLogInStore } from "../store/loginstore";
 import { useUtilStore } from "../store/utilcommon";
@@ -31,18 +31,15 @@ export default function LoginPage() {
   const refresh_token = useLogInStore((state) => state.refresh_token);
   const current_project = useLogInStore((state) => state.current_project);
   const current_user = useLogInStore((state) => state.user);
+  const [loginData, setLoginData] = useState({ email: "", password: "" });
 
   const pageSize = useUtilStore((state) => state.size);
   const router = useRouter();
 
   async function handleSubmit(e) {
     e.preventDefault();
-    let logindata = {};
-    const formData = new FormData(e.currentTarget);
-    formData.forEach((value, key) => {
-      logindata[key] = value;
-    });
-    const resp = await loggin(logindata);
+    // console.log(loggin);
+    const resp = await loggin(loginData);
 
     login(resp);
   }
@@ -100,7 +97,7 @@ export default function LoginPage() {
               </DialogContent>
             </Dialog>
           </div>
-          <form onSubmit={handleSubmit}>
+          <form>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -108,6 +105,10 @@ export default function LoginPage() {
                   id="email"
                   name="email"
                   type="email"
+                  value={loginData.email}
+                  onChange={(e) =>
+                    setLoginData({ ...loginData, email: e.target.value })
+                  }
                   placeholder="Enter your email"
                   required
                 />
@@ -118,6 +119,10 @@ export default function LoginPage() {
                   id="password"
                   name="password"
                   type="password"
+                  value={loginData.password}
+                  onChange={(e) =>
+                    setLoginData({ ...loginData, password: e.target.value })
+                  }
                   placeholder="Enter your password"
                   required
                 />
@@ -135,6 +140,7 @@ export default function LoginPage() {
             )} */}
             <Button
               type="submit"
+              onClick={handleSubmit}
               className="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               Log in
